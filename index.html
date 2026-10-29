@@ -392,8 +392,8 @@
       {
         id: "hosp9mmqthtqtldpru7gqsoqqk",
         title: "靜心同學會",
-        category: "旅行",
-        type: "travel",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-12-19T11:30:00",
         endDate: "2026-12-19T14:30:00",
         dateString: "2026/12/19 (六) 11:30",
@@ -544,7 +544,8 @@
                            title.includes("證婚") || 
                            title.includes("午宴") || 
                            title.includes("晚宴") || 
-                           title.includes("週歲");
+                           title.includes("週歲") || 
+                           title.includes("靜心同學會");
 
             if (isWork) {
               return { ...ev, category: "拍攝工作", type: "work" };
