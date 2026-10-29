@@ -530,7 +530,7 @@
           EVENTS_DATA = data.events.map(ev => {
             const title = (ev.title || "").toLowerCase();
             if (title.includes("登山") || title.includes("爬山") || title.includes("露營") || title.includes("旅行") || title.includes("旅遊") || title.includes("度假") || title.includes("出國")) {
-              return { ...ev, category: "旅行 / 戶外", type: "travel" };
+              return { ...ev, category: "旅行", type: "travel" };
             }
             if (title.includes("生日")) {
               return { ...ev, category: "生日慶祝", type: "travel" };
