@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>行程倒數看板 | Mr. Q</title>
+  
+  <!-- iOS PWA / Web Clip Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="行程倒數">
+  <meta name="theme-color" content="#090d16">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              glow: '#60a5fa'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* iOS Momentum Scrolling & Glassmorphism */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      background: radial-gradient(circle at 50% 0%, #172554 0%, #090d16 60%, #030712 100%);
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .glass-card-spotlight {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(30, 58, 138, 0.08) 100%);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(96, 165, 250, 0.25);
+      box-shadow: 0 12px 40px -10px rgba(59, 130, 246, 0.3);
+    }
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .glass-input:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake {
+      animation: shake 0.4s ease-in-out;
+    }
+    
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 24px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 20px);
+    }
+  </style>
+</head>
+<body class="text-slate-100 antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- ==================== 鎖定解鎖畫面 (PIN / Password Screen) ==================== -->
+  <div id="lockScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#090d16]/95 backdrop-blur-xl transition-opacity duration-300">
+    <div id="lockCard" class="w-full max-w-sm glass-card rounded-3xl p-8 text-center flex flex-col items-center">
+      
+      <!-- Lock Icon with Glow -->
+      <div class="relative mb-6">
+        <div class="absolute -inset-2 bg-blue-500/20 rounded-full blur-xl"></div>
+        <div class="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <i data-lucide="lock" class="w-8 h-8 text-white"></i>
+        </div>
+      </div>
+
+      <h1 class="text-xl font-bold tracking-tight text-white mb-1">行程倒數看板</h1>
+      <p class="text-xs text-slate-400 mb-6">請輸入安全密碼以解鎖行程資訊</p>
+
+      <!-- PIN Indicator Dots -->
+      <div class="flex justify-center space-x-4 mb-6">
+        <div id="dot1" class="w-3.5 h-3.5 rounded-full border border-slate-500 transition-all duration-200"></div>
+        <div id="dot2" class="w-3.5 h-3.5 rounded-full border border-slate-500 transition-all duration-200"></div>
+        <div id="dot3" class="w-3.5 h-3.5 rounded-full border border-slate-500 transition-all duration-200"></div>
+        <div id="dot4" class="w-3.5 h-3.5 rounded-full border border-slate-500 transition-all duration-200"></div>
+      </div>
+
+      <!-- Hidden standard input for accessibility / auto keyboard -->
+      <form id="authForm" onsubmit="event.preventDefault(); verifyPassword();" class="w-full">
+        <input 
+          type="password" 
+          id="pinInput" 
+          maxlength="8" 
+          pattern="[0-9]*" 
+          inputmode="numeric" 
+          autocomplete="current-password"
+          placeholder="輸入 4 位數密碼" 
+          class="w-full text-center tracking-widest text-lg py-3 px-4 rounded-xl glass-input text-white placeholder-slate-500 mb-3 outline-none"
+        />
+        
+        <p id="errorMsg" class="text-xs text-rose-400 h-5 opacity-0 transition-opacity">密碼錯誤，請重新輸入</p>
+
+        <!-- Unlock Button -->
+        <button 
+          type="button" 
+          onclick="verifyPassword()" 
+          class="w-full mt-2 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-lg shadow-blue-600/30 transition-all active:scale-[0.98] flex items-center justify-center space-x-2"
+        >
+          <span>解鎖查看</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+
+      <!-- Remember device checkbox -->
+      <label class="flex items-center space-x-2 mt-5 cursor-pointer text-xs text-slate-400">
+        <input type="checkbox" id="rememberMe" checked class="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0">
+        <span>記住此裝置（下次免輸入）</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ==================== 主要儀表板 (Main Dashboard) ==================== -->
+  <div id="mainDashboard" class="hidden min-h-screen flex flex-col pt-safe pb-safe px-4 sm:px-6 max-w-4xl mx-auto">
+    
+    <!-- Top Navigation Bar -->
+    <header class="flex items-center justify-between py-4 mb-2">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-semibold text-white tracking-tight">行程倒數看板</h1>
+          <p class="text-xs text-slate-400 flex items-center space-x-1">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>已同步 Google 日曆</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <a 
+          href="https://calendar.google.com/" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="p-2.5 rounded-xl glass-card hover:bg-white/10 text-slate-300 hover:text-white transition-all text-xs flex items-center space-x-1"
+          title="開啟 Google 日曆"
+        >
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">日曆</span>
+        </a>
+        <button 
+          onclick="lockPortal()" 
+          class="p-2.5 rounded-xl glass-card hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 transition-all text-xs flex items-center space-x-1"
+          title="重新上鎖"
+        >
+          <i data-lucide="lock" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">鎖定</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- iOS Add to Homescreen Guide Banner (Dismissible) -->
+    <div id="pwaBanner" class="mb-5 p-3 rounded-2xl bg-blue-900/30 border border-blue-500/30 flex items-start justify-between text-xs text-blue-200">
+      <div class="flex items-start space-x-2.5">
+        <i data-lucide="smartphone" class="w-4 h-4 mt-0.5 text-blue-400 flex-shrink-0"></i>
+        <div>
+          <span class="font-medium text-blue-100">加入 iPhone 主畫面：</span>
+          點擊 Safari 下方「分享」按鈕，選擇「<strong>加入主畫面</strong>」，即可像 App 一樣隨開即看！
+        </div>
+      </div>
+      <button onclick="dismissBanner()" class="text-blue-300 hover:text-white ml-2">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Spotlight Hero: Next Immediate Event -->
+    <section class="mb-8">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <div class="flex items-center space-x-2">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <i data-lucide="flame" class="w-3 h-3 mr-1"></i> 即將到來首要行程
+          </span>
+        </div>
+        <span id="currentTimeDisplay" class="text-xs text-slate-400 font-mono"></span>
+      </div>
+
+      <div class="glass-card-spotlight rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+        <!-- Background decoration glow -->
+        <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <span id="spotlightCategory" class="px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-400/20">
+              攝影記錄
+            </span>
+            <div id="spotlightDateTag" class="text-sm font-semibold text-slate-300">
+              2026/10/18
+            </div>
+          </div>
+
+          <h2 id="spotlightTitle" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
+            內湖週歲拍攝
+          </h2>
+
+          <!-- Big Live Countdown Timer -->
+          <div class="grid grid-cols-4 gap-2 sm:gap-4 my-6 text-center">
+            <div class="bg-black/30 rounded-2xl p-3 border border-white/5">
+              <span id="cd-days" class="block text-2xl sm:text-4xl font-extrabold text-blue-400 font-mono tracking-tight">--</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider">天</span>
+            </div>
+            <div class="bg-black/30 rounded-2xl p-3 border border-white/5">
+              <span id="cd-hours" class="block text-2xl sm:text-4xl font-extrabold text-indigo-400 font-mono tracking-tight">--</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider">小時</span>
+            </div>
+            <div class="bg-black/30 rounded-2xl p-3 border border-white/5">
+              <span id="cd-mins" class="block text-2xl sm:text-4xl font-extrabold text-cyan-400 font-mono tracking-tight">--</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider">分鐘</span>
+            </div>
+            <div class="bg-black/30 rounded-2xl p-3 border border-white/5">
+              <span id="cd-secs" class="block text-2xl sm:text-4xl font-extrabold text-emerald-400 font-mono tracking-tight">--</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider">秒</span>
+            </div>
+          </div>
+
+          <!-- Event Details bar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10 text-xs sm:text-sm text-slate-300">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i>
+              <span id="spotlightLocation" class="font-medium text-white">內湖</span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <a 
+                id="spotlightMapBtn" 
+                href="#" 
+                target="_blank" 
+                class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-blue-300 border border-white/10 flex items-center space-x-1 transition-all"
+              >
+                <i data-lucide="navigation" class="w-3.5 h-3.5"></i>
+                <span>導航</span>
+              </a>
+              <a 
+                id="spotlightCalBtn" 
+                href="#" 
+                target="_blank" 
+                class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium flex items-center space-x-1 shadow transition-all"
+              >
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                <span>日曆</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline of All Events -->
+    <section class="flex-1">
+      <div class="flex items-center justify-between mb-4 px-1">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <span>所有排程清單</span>
+          <span id="eventCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">7 筆</span>
+        </h3>
+        <span class="text-xs text-slate-400">依日期先後排序</span>
+      </div>
+
+      <div id="eventsList" class="space-y-3.5">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-12 py-6 text-center text-xs text-slate-500 border-t border-white/5 space-y-1">
+      <p>行程看板與 Google 日曆保持同步・支援即時動態倒數</p>
+      <p class="text-[11px] text-slate-600">密碼保護已啟用・最後更新時間：2026/10/29</p>
+    </footer>
+
+  </div>
+
+  <!-- ==================== JavaScript 核心邏輯 ==================== -->
+  <script>
+    // 密碼 SHA-256 Hash ("0310" 的 Hash 值)
+    const AUTH_HASH = "408a5ee676694af19215cb22b2cd871e39c693f907933583ece00eda8d73ee16";
+    const STORAGE_KEY = "schedule_auth_token_0310";
+
+    // 7 筆同步至 Google 日曆的行程資料庫
+    const EVENTS_DATA = [
+      {
+        id: "echn0r6ug7nkkugce6f95oiugo",
+        title: "內湖週歲拍攝",
+        category: "攝影記錄",
+        startDate: "2026-10-18T09:00:00",
+        endDate: "2026-10-18T18:00:00",
+        dateString: "2026/10/18 (日)",
+        location: "台北市內湖區",
+        calLink: "https://www.google.com/calendar/event?eid=ZWNobjByNnVnN25ra3VnY2U2Zjk1b2l1Z28gbXJxdGltQG0"
+      },
+      {
+        id: "panreg9jki5af1iqpgm8pj9nt0",
+        title: "基隆彭園午宴",
+        category: "婚宴午宴",
+        startDate: "2026-11-01T11:30:00",
+        endDate: "2026-11-01T15:30:00",
+        dateString: "2026/11/01 (日)",
+        location: "基隆彭園",
+        calLink: "https://www.google.com/calendar/event?eid=cGFucmVnOWpraTVhZjFpcXBnbThwajludDAgbXJxdGltQG0"
+      },
+      {
+        id: "bgug42mmophmt0pcsdvbn2gq20",
+        title: "高雄婚禮",
+        category: "婚禮記錄",
+        startDate: "2026-11-07T08:00:00",
+        endDate: "2026-11-08T20:00:00",
+        dateString: "2026/11/07 – 11/08 (跨日)",
+        location: "高雄",
+        calLink: "https://www.google.com/calendar/event?eid=Ymd1ZzQybW1vcGhtdDBwY3NkdmJuMmdxMjAgbXJxdGltQG0"
+      },
+      {
+        id: "oojkhdud9v7h6fdtqovf3kqvok",
+        title: "台北婚禮",
+        category: "婚禮記錄",
+        startDate: "2026-11-29T10:00:00",
+        endDate: "2026-11-29T16:00:00",
+        dateString: "2026/11/29 (日)",
+        location: "台北",
+        calLink: "https://www.google.com/calendar/event?eid=b29qa2hkdWQ5djdoNmZkdHFvdmYza3F2b2sgbXJxdGltQG0"
+      },
+      {
+        id: "hosp9mmqthtqtldpru7gqsoqqk",
+        title: "台北餐會拍攝",
+        category: "攝影記錄",
+        startDate: "2026-12-19T18:00:00",
+        endDate: "2026-12-19T22:00:00",
+        dateString: "2026/12/19 (六)",
+        location: "台北",
+        calLink: "https://www.google.com/calendar/event?eid=aG9zcDltbXF0aHRxdGxkcHJ1N2dxc29xcWsgbXJxdGltQG0"
+      },
+      {
+        id: "eu7j2h0md9eqfhv9bclndk816s",
+        title: "台中儀式午宴",
+        category: "儀式午宴",
+        startDate: "2026-12-20T09:00:00",
+        endDate: "2026-12-20T15:00:00",
+        dateString: "2026/12/20 (日)",
+        location: "台中",
+        calLink: "https://www.google.com/calendar/event?eid=ZXU3ajJoMG1kOWVxZmh2OWJjbG5kazgxNnMgbXJxdGltQG0"
+      },
+      {
+        id: "re36eiur2a7jjqvubvhbbbtab0",
+        title: "君品酒店（京站）",
+        category: "婚宴會館",
+        startDate: "2027-04-25T11:00:00",
+        endDate: "2027-04-25T16:00:00",
+        dateString: "2027/04/25 (日)",
+        location: "台北君品酒店 (京站)",
+        calLink: "https://www.google.com/calendar/event?eid=cmUzNmVpdXIyYTdqanF2dWJ2aGJiYnRhYjAgbXJxdGltQG0"
+      }
+    ];
+
+    // SHA-256 密碼雜湊運算
+    async function sha256(str) {
+      const buf = new TextEncoder().encode(str);
+      const hashBuf = await crypto.subtle.digest("SHA-256", buf);
+      return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // 檢查登入狀態
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      checkAuth();
+      setupPinInput();
+      if (localStorage.getItem("pwa_banner_dismissed")) {
+        const b = document.getElementById("pwaBanner");
+        if (b) b.style.display = "none";
+      }
+    });
+
+    function checkAuth() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === AUTH_HASH) {
+        unlockPortal();
+      }
+    }
+
+    function setupPinInput() {
+      const pin = document.getElementById("pinInput");
+      pin.addEventListener("input", (e) => {
+        updateDots(e.target.value.length);
+        if (e.target.value.length === 4) {
+          verifyPassword();
+        }
+      });
+    }
+
+    function updateDots(length) {
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`dot${i}`);
+        if (i <= length) {
+          dot.classList.add("bg-blue-500", "border-blue-400", "scale-110");
+        } else {
+          dot.classList.remove("bg-blue-500", "border-blue-400", "scale-110");
+        }
+      }
+    }
+
+    async function verifyPassword() {
+      const pin = document.getElementById("pinInput").value;
+      const errorMsg = document.getElementById("errorMsg");
+      const lockCard = document.getElementById("lockCard");
+      
+      const hashed = await sha256(pin);
+      if (hashed === AUTH_HASH) {
+        if (document.getElementById("rememberMe").checked) {
+          localStorage.setItem(STORAGE_KEY, AUTH_HASH);
+        }
+        unlockPortal();
+      } else {
+        errorMsg.classList.remove("opacity-0");
+        lockCard.classList.add("shake");
+        setTimeout(() => lockCard.classList.remove("shake"), 400);
+        document.getElementById("pinInput").value = "";
+        updateDots(0);
+      }
+    }
+
+    function unlockPortal() {
+      document.getElementById("lockScreen").classList.add("opacity-0", "pointer-events-none");
+      setTimeout(() => {
+        document.getElementById("lockScreen").style.display = "none";
+      }, 300);
+      document.getElementById("mainDashboard").classList.remove("hidden");
+      renderPortal();
+      startTimers();
+    }
+
+    function lockPortal() {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+
+    function dismissBanner() {
+      document.getElementById("pwaBanner").style.display = "none";
+      localStorage.setItem("pwa_banner_dismissed", "true");
+    }
+
+    // 渲染頁面
+    function renderPortal() {
+      const now = new Date();
+      // 依日期先後排序
+      const sorted = [...EVENTS_DATA].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      
+      // 首要即將到來的行程（第一筆未來的活動）
+      const upcoming = sorted.filter(e => new Date(e.endDate || e.startDate) > now);
+      const spotlight = upcoming.length > 0 ? upcoming[0] : sorted[0];
+
+      if (spotlight) {
+        document.getElementById("spotlightTitle").textContent = spotlight.title;
+        document.getElementById("spotlightCategory").textContent = spotlight.category;
+        document.getElementById("spotlightDateTag").textContent = spotlight.dateString;
+        document.getElementById("spotlightLocation").textContent = spotlight.location;
+        document.getElementById("spotlightMapBtn").href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spotlight.location)}`;
+        document.getElementById("spotlightCalBtn").href = spotlight.calLink;
+      }
+
+      // 渲染其餘行程列表
+      const listContainer = document.getElementById("eventsList");
+      listContainer.innerHTML = "";
+
+      sorted.forEach((event, idx) => {
+        const isSpotlight = spotlight && spotlight.id === event.id;
+        const target = new Date(event.startDate);
+        const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+        const badgeColor = diffDays <= 7 ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-blue-500/20 text-blue-300 border-blue-500/30";
+
+        const card = document.createElement("div");
+        card.className = `glass-card rounded-2xl p-4 sm:p-5 transition-all hover:border-slate-500/40 ${isSpotlight ? 'ring-1 ring-blue-500/40' : ''}`;
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                <span class="text-[11px] font-medium px-2 py-0.5 rounded-md ${badgeColor} border">
+                  ${diffDays > 0 ? `倒數 ${diffDays} 天` : (diffDays === 0 ? "今天" : "已完成")}
+                </span>
+                <span class="text-xs font-semibold text-slate-300">${event.dateString}</span>
+                <span class="text-[11px] text-slate-400">#${event.category}</span>
+              </div>
+              <h4 class="text-base sm:text-lg font-bold text-white tracking-tight">${event.title}</h4>
+              <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-400">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-400"></i>
+                <span>${event.location}</span>
+              </div>
+            </div>
+
+            <!-- 右側即時動態時間 + 操作按鈕 -->
+            <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+              <div class="text-right mr-1">
+                <span class="text-xs text-slate-400 block">剩餘</span>
+                <span id="countdown-${event.id}" class="text-sm font-bold font-mono text-blue-400">計算中...</span>
+              </div>
+              <a 
+                href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}" 
+                target="_blank" 
+                class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all"
+                title="Google 地圖導航"
+              >
+                <i data-lucide="navigation" class="w-4 h-4"></i>
+              </a>
+              <a 
+                href="${event.calLink}" 
+                target="_blank" 
+                class="p-2.5 rounded-xl bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-all"
+                title="開啟 Google 日曆"
+              >
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+              </a>
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+
+      document.getElementById("eventCountBadge").textContent = `${sorted.length} 筆`;
+      lucide.createIcons();
+    }
+
+    // 即時倒數計時器計時迴圈
+    function startTimers() {
+      updateCountdowns();
+      setInterval(updateCountdowns, 1000);
+    }
+
+    function updateCountdowns() {
+      const now = new Date();
+      
+      // 更新現在時間顯示
+      const timeStr = now.toLocaleDateString("zh-TW", { month: "numeric", day: "numeric", weekday: "short" }) + " " + now.toTimeString().substring(0, 8);
+      const timeElem = document.getElementById("currentTimeDisplay");
+      if (timeElem) timeElem.textContent = timeStr;
+
+      // 取得即將到來的首要行程
+      const sorted = [...EVENTS_DATA].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      const upcoming = sorted.filter(e => new Date(e.endDate || e.startDate) > now);
+      const spotlight = upcoming.length > 0 ? upcoming[0] : sorted[0];
+
+      // 更新首要卡片大倒數
+      if (spotlight) {
+        const diff = new Date(spotlight.startDate) - now;
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+          const mins = Math.floor((diff / 1000 / 60) % 60);
+          const secs = Math.floor((diff / 1000) % 60);
+
+          document.getElementById("cd-days").textContent = String(days).padStart(2, '0');
+          document.getElementById("cd-hours").textContent = String(hours).padStart(2, '0');
+          document.getElementById("cd-mins").textContent = String(mins).padStart(2, '0');
+          document.getElementById("cd-secs").textContent = String(secs).padStart(2, '0');
+        } else {
+          document.getElementById("cd-days").textContent = "00";
+          document.getElementById("cd-hours").textContent = "00";
+          document.getElementById("cd-mins").textContent = "00";
+          document.getElementById("cd-secs").textContent = "00";
+        }
+      }
+
+      // 更新每個項目的倒數
+      EVENTS_DATA.forEach(event => {
+        const span = document.getElementById(`countdown-${event.id}`);
+        if (!span) return;
+        const diff = new Date(event.startDate) - now;
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+          const mins = Math.floor((diff / 1000 / 60) % 60);
+          const secs = Math.floor((diff / 1000) % 60);
+          span.textContent = `${days}天 ${hours}時 ${mins}分 ${secs}秒`;
+        } else {
+          span.textContent = "已開始 / 結束";
+          span.className = "text-xs font-semibold text-slate-500";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
