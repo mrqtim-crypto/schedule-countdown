@@ -526,8 +526,14 @@
         const res = await fetch(GAS_API_URL);
         const data = await res.json();
         if (data && data.status === "success" && Array.isArray(data.events)) {
+          // 排除生日項目（生日不需倒數）
+          const filtered = data.events.filter(ev => {
+            const title = (ev.title || "").toLowerCase();
+            return !title.includes("生日");
+          });
+
           // 嚴格規則：除了「拍攝工作」相關關鍵字外，其餘全部歸為「旅行」
-          EVENTS_DATA = data.events.map(ev => {
+          EVENTS_DATA = filtered.map(ev => {
             const title = (ev.title || "").toLowerCase();
             const isWork = title.includes("拍攝") || 
                            title.includes("攝影") || 

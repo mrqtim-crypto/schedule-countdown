@@ -36,8 +36,8 @@ function doGet(e) {
       var ev = events[i];
       var title = ev.getTitle();
       
-      // 排除無標題或私人標記的隱藏項目 (可自訂)
-      if (!title) continue;
+      // 排除無標題或生日等不需倒數的項目
+      if (!title || title.indexOf("生日") !== -1) continue;
 
       var start = ev.getStartTime();
       var end = ev.getEndTime();
