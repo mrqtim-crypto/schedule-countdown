@@ -660,11 +660,17 @@
         // 檢查特殊節日
         const holidayName = HOLIDAYS[dateStr];
 
-        // 檢查是否有 Google 日曆行程
+        // 檢查是否有 Google 日曆行程 (精準校正全天事件 exclusive 結束時間)
         const dayEvents = EVENTS_DATA.filter(e => {
-          const startStr = e.startDate.substring(0, 10);
-          const endStr = e.endDate.substring(0, 10);
-          return dateStr >= startStr && dateStr <= endStr;
+          const start = new Date(e.startDate);
+          let end = new Date(e.endDate || e.startDate);
+          // 若結束時間為午夜 00:00:00 (Google 日曆全天事件的 exclusive 結束時間)，扣除 1 秒取得實際結束日
+          if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0 && end > start) {
+            end = new Date(end.getTime() - 1000);
+          }
+          const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+          const actualEndStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+          return dateStr >= startStr && dateStr <= actualEndStr;
         });
 
         const cell = document.createElement("div");
