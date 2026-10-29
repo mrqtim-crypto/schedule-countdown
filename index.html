@@ -271,8 +271,8 @@
     const AUTH_HASH = "408a5ee676694af19215cb22b2cd871e39c693f907933583ece00eda8d73ee16";
     const STORAGE_KEY = "schedule_auth_token_0310";
 
-    // Google Apps Script 即時同步 API 網址 (可由 localStorage 或程式設定)
-    let GAS_API_URL = localStorage.getItem("gas_api_url") || "";
+    // Google Apps Script 即時同步 API 網址 (已預先設定專屬 Web App URL)
+    let GAS_API_URL = localStorage.getItem("gas_api_url") || "https://script.google.com/macros/s/AKfycbz0htZlLHrjeX7f3PrV6mJbBFuz91KaasZJNdzn865WNTg6mcLuRvMdgdtztWRxVmsC/exec";
 
     // 台灣節慶假日資料庫 (同步自 Google 日曆 台灣節慶假日)
     const HOLIDAYS = {
