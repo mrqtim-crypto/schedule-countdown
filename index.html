@@ -392,13 +392,13 @@
       {
         id: "hosp9mmqthtqtldpru7gqsoqqk",
         title: "靜心同學會",
-        category: "聚會活動",
-        type: "work",
+        category: "旅行",
+        type: "travel",
         startDate: "2026-12-19T11:30:00",
         endDate: "2026-12-19T14:30:00",
         dateString: "2026/12/19 (六) 11:30",
         location: "大院子老屋餐廳",
-        calLink: "https://www.google.com/calendar/event?eid=aG9zcDltbXF0aHRxdGxkcHJ1N2dxc29xcWsgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/hosp9mmqthtqtldpru7gqsoqqk"
       },
       {
         id: "eu7j2h0md9eqfhv9bclndk816s",
@@ -526,19 +526,25 @@
         const res = await fetch(GAS_API_URL);
         const data = await res.json();
         if (data && data.status === "success" && Array.isArray(data.events)) {
-          // 自動智慧補強分類判定 (登山/爬山/露營/旅行 -> 淺藍色旅行標籤)
+          // 嚴格規則：除了「拍攝工作」相關關鍵字外，其餘全部歸為「旅行」
           EVENTS_DATA = data.events.map(ev => {
             const title = (ev.title || "").toLowerCase();
-            if (title.includes("登山") || title.includes("爬山") || title.includes("露營") || title.includes("旅行") || title.includes("旅遊") || title.includes("度假") || title.includes("出國")) {
+            const isWork = title.includes("拍攝") || 
+                           title.includes("攝影") || 
+                           title.includes("婚禮") || 
+                           title.includes("婚宴") || 
+                           title.includes("儀式") || 
+                           title.includes("迎娶") || 
+                           title.includes("證婚") || 
+                           title.includes("午宴") || 
+                           title.includes("晚宴") || 
+                           title.includes("週歲");
+
+            if (isWork) {
+              return { ...ev, category: "拍攝工作", type: "work" };
+            } else {
               return { ...ev, category: "旅行", type: "travel" };
             }
-            if (title.includes("生日")) {
-              return { ...ev, category: "生日慶祝", type: "travel" };
-            }
-            if (title.includes("同學會") || title.includes("聚會") || title.includes("聚餐")) {
-              return { ...ev, category: "聚會活動", type: "work" };
-            }
-            return ev;
           });
           renderPortal();
           renderCalendar(currentCalYear, currentCalMonth);
