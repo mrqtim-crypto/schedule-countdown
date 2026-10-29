@@ -62,6 +62,26 @@
         min-height: 54px;
       }
     }
+
+    @keyframes slideInRight {
+      from { opacity: 0.25; transform: translateX(24px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0.25; transform: translateX(-24px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .slide-in-right {
+      animation: slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .slide-in-left {
+      animation: slideInLeft 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    #calendarSection {
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+    }
   </style>
 </head>
 <body class="antialiased selection:bg-blue-100 selection:text-blue-900">
@@ -159,11 +179,12 @@
     <main class="flex-1">
       
       <!-- ==================== 當月份月曆區塊 ==================== -->
-      <section class="white-card rounded-2xl p-4 sm:p-5 mb-8">
+      <section id="calendarSection" class="white-card rounded-2xl p-4 sm:p-5 mb-8 relative select-none">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-2">
             <h2 id="calendarMonthTitle" class="text-base sm:text-lg font-bold text-slate-900 tracking-tight"></h2>
             <button onclick="goToCurrentMonth()" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors">今天</button>
+            <span class="text-[11px] text-slate-400 font-normal">（可左右滑動）</span>
           </div>
           <div class="flex items-center space-x-1">
             <button onclick="prevMonth()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors" title="上個月">
@@ -478,6 +499,7 @@
       document.getElementById("mainDashboard").classList.remove("hidden");
       renderPortal();
       renderCalendar(currentCalYear, currentCalMonth);
+      setupCalendarGestures();
       startTimers();
     }
 
@@ -486,14 +508,14 @@
       location.reload();
     }
 
-    // ==================== 月曆繪製與切換邏輯 ====================
+    // ==================== 月曆繪製與切換邏輯 (支援手勢滑動) ====================
     function prevMonth() {
       currentCalMonth--;
       if (currentCalMonth < 0) {
         currentCalMonth = 11;
         currentCalYear--;
       }
-      renderCalendar(currentCalYear, currentCalMonth);
+      renderCalendar(currentCalYear, currentCalMonth, 'prev');
     }
 
     function nextMonth() {
@@ -502,7 +524,7 @@
         currentCalMonth = 0;
         currentCalYear++;
       }
-      renderCalendar(currentCalYear, currentCalMonth);
+      renderCalendar(currentCalYear, currentCalMonth, 'next');
     }
 
     function goToCurrentMonth() {
@@ -512,10 +534,20 @@
       renderCalendar(currentCalYear, currentCalMonth);
     }
 
-    function renderCalendar(year, month) {
+    function renderCalendar(year, month, direction = null) {
       document.getElementById("calendarMonthTitle").textContent = `${year} 年 ${month + 1} 月`;
       const grid = document.getElementById("calendarGrid");
       grid.innerHTML = "";
+
+      // 換月滑動過渡動畫
+      grid.classList.remove("slide-in-right", "slide-in-left");
+      if (direction === 'next') {
+        void grid.offsetWidth; // trigger reflow
+        grid.classList.add("slide-in-right");
+      } else if (direction === 'prev') {
+        void grid.offsetWidth;
+        grid.classList.add("slide-in-left");
+      }
 
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -615,6 +647,87 @@
         elem.classList.add("ring-2", "ring-blue-500");
         setTimeout(() => elem.classList.remove("ring-2", "ring-blue-500"), 1500);
       }
+    }
+
+    // 設定行事曆左右滑動手勢 (支援 iOS 觸控滑動 & 電腦滑鼠拖曳)
+    function setupCalendarGestures() {
+      const section = document.getElementById("calendarSection");
+      if (!section || section.dataset.gestureBound) return;
+      section.dataset.gestureBound = "true";
+
+      let startX = 0;
+      let startY = 0;
+      let isSwiping = false;
+
+      // 手機觸控開始
+      section.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          isSwiping = true;
+        }
+      }, { passive: true });
+
+      // 手機觸控移動中
+      section.addEventListener("touchmove", (e) => {
+        if (!isSwiping || e.touches.length !== 1) return;
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const diffX = currentX - startX;
+        const diffY = currentY - startY;
+
+        // 若垂直滑動幅度過大，判定使用者意圖為滾動頁面，取消換月手勢
+        if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 25) {
+          isSwiping = false;
+        }
+      }, { passive: true });
+
+      // 手機觸控結束
+      section.addEventListener("touchend", (e) => {
+        if (!isSwiping) return;
+        isSwiping = false;
+        const endX = e.changedTouches[0].clientX;
+        const endY = e.changedTouches[0].clientY;
+        const diffX = endX - startX;
+        const diffY = endY - startY;
+
+        // 水平滑動超過 40px 且以水平移動為主
+        if (Math.abs(diffX) >= 40 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+          if (diffX < 0) {
+            nextMonth(); // 向左滑動 -> 下個月
+          } else {
+            prevMonth(); // 向右滑動 -> 上個月
+          }
+        }
+      }, { passive: true });
+
+      // 電腦滑鼠拖曳支援
+      let mouseStartX = 0;
+      let isMouseDown = false;
+
+      section.addEventListener("mousedown", (e) => {
+        // 點擊按鈕時不觸發拖曳
+        if (e.target.closest("button") || e.target.closest("a")) return;
+        mouseStartX = e.clientX;
+        isMouseDown = true;
+      });
+
+      section.addEventListener("mouseup", (e) => {
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        const diffX = e.clientX - mouseStartX;
+        if (Math.abs(diffX) >= 45) {
+          if (diffX < 0) {
+            nextMonth();
+          } else {
+            prevMonth();
+          }
+        }
+      });
+
+      section.addEventListener("mouseleave", () => {
+        isMouseDown = false;
+      });
     }
 
     // ==================== 倒數清單渲染邏輯 ====================
