@@ -321,7 +321,8 @@
       {
         id: "echn0r6ug7nkkugce6f95oiugo",
         title: "內湖週歲拍攝",
-        category: "攝影記錄",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-10-18T09:00:00",
         endDate: "2026-10-18T18:00:00",
         dateString: "2026/10/18 (日)",
@@ -331,7 +332,8 @@
       {
         id: "panreg9jki5af1iqpgm8pj9nt0",
         title: "基隆彭園午宴",
-        category: "婚宴午宴",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-11-01T11:30:00",
         endDate: "2026-11-01T15:30:00",
         dateString: "2026/11/01 (日)",
@@ -341,7 +343,8 @@
       {
         id: "bgug42mmophmt0pcsdvbn2gq20",
         title: "高雄婚禮",
-        category: "婚禮記錄",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-11-07T08:00:00",
         endDate: "2026-11-08T20:00:00",
         dateString: "2026/11/07 – 11/08 (跨日)",
@@ -351,7 +354,8 @@
       {
         id: "oojkhdud9v7h6fdtqovf3kqvok",
         title: "台北婚禮",
-        category: "婚禮記錄",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-11-29T10:00:00",
         endDate: "2026-11-29T16:00:00",
         dateString: "2026/11/29 (日)",
@@ -361,7 +365,8 @@
       {
         id: "hosp9mmqthtqtldpru7gqsoqqk",
         title: "台北餐會拍攝",
-        category: "攝影記錄",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-12-19T18:00:00",
         endDate: "2026-12-19T22:00:00",
         dateString: "2026/12/19 (六)",
@@ -371,7 +376,8 @@
       {
         id: "eu7j2h0md9eqfhv9bclndk816s",
         title: "台中儀式午宴",
-        category: "儀式午宴",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2026-12-20T09:00:00",
         endDate: "2026-12-20T15:00:00",
         dateString: "2026/12/20 (日)",
@@ -381,7 +387,8 @@
       {
         id: "re36eiur2a7jjqvubvhbbbtab0",
         title: "君品酒店（京站）",
-        category: "婚宴會館",
+        category: "拍攝工作",
+        type: "work",
         startDate: "2027-04-25T11:00:00",
         endDate: "2027-04-25T16:00:00",
         dateString: "2027/04/25 (日)",
@@ -488,7 +495,15 @@
 
       if (spotlight) {
         document.getElementById("spotlightTitle").textContent = spotlight.title;
-        document.getElementById("spotlightCategory").textContent = spotlight.category;
+        const spotCat = document.getElementById("spotlightCategory");
+        spotCat.textContent = spotlight.category;
+        if (spotlight.type === "work") {
+          spotCat.className = "px-3 py-1 rounded-lg text-xs font-medium bg-pink-500/20 text-pink-300 border border-pink-400/30 flex items-center space-x-1";
+          spotCat.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-pink-400 mr-1.5"></span><span>${spotlight.category}</span>`;
+        } else {
+          spotCat.className = "px-3 py-1 rounded-lg text-xs font-medium bg-sky-500/20 text-sky-300 border border-sky-400/30 flex items-center space-x-1";
+          spotCat.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-sky-400 mr-1.5"></span><span>${spotlight.category}</span>`;
+        }
         document.getElementById("spotlightDateTag").textContent = spotlight.dateString;
         document.getElementById("spotlightLocation").textContent = spotlight.location;
         document.getElementById("spotlightMapBtn").href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spotlight.location)}`;
@@ -504,6 +519,10 @@
         const target = new Date(event.startDate);
         const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
         const badgeColor = diffDays <= 7 ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-blue-500/20 text-blue-300 border-blue-500/30";
+        
+        const typeBadge = event.type === "work" 
+          ? `<span class="text-[11px] px-2 py-0.5 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/30 flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-pink-400 mr-1"></span>拍攝工作</span>`
+          : `<span class="text-[11px] px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 mr-1"></span>旅行</span>`;
 
         const card = document.createElement("div");
         card.className = `glass-card rounded-2xl p-4 sm:p-5 transition-all hover:border-slate-500/40 ${isSpotlight ? 'ring-1 ring-blue-500/40' : ''}`;
@@ -515,7 +534,7 @@
                   ${diffDays > 0 ? `倒數 ${diffDays} 天` : (diffDays === 0 ? "今天" : "已完成")}
                 </span>
                 <span class="text-xs font-semibold text-slate-300">${event.dateString}</span>
-                <span class="text-[11px] text-slate-400">#${event.category}</span>
+                ${typeBadge}
               </div>
               <h4 class="text-base sm:text-lg font-bold text-white tracking-tight">${event.title}</h4>
               <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-400">
