@@ -52,6 +52,16 @@
     .pt-safe {
       padding-top: env(safe-area-inset-top, 20px);
     }
+
+    .cal-cell {
+      min-height: 64px;
+      transition: all 0.15s ease-in-out;
+    }
+    @media (max-width: 640px) {
+      .cal-cell {
+        min-height: 54px;
+      }
+    }
   </style>
 </head>
 <body class="antialiased selection:bg-blue-100 selection:text-blue-900">
@@ -116,7 +126,7 @@
     <!-- Top Navigation Bar -->
     <header class="flex items-center justify-between py-6 border-b border-slate-200/80 mb-6">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">行程倒數</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">行程倒數看板</h1>
         <p class="text-xs text-slate-500 mt-0.5 flex items-center space-x-1.5">
           <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
           <span>Google 日曆同步中</span>
@@ -146,19 +156,78 @@
       </div>
     </header>
 
-    <!-- Events List: 依倒數天數排序 (僅顯示未結束行程) -->
     <main class="flex-1">
-      <div id="eventsList" class="space-y-4">
-        <!-- Rendered dynamically by JavaScript -->
-      </div>
-
-      <!-- 空白狀態 (如果沒有未來的行程) -->
-      <div id="emptyState" class="hidden text-center py-16">
-        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-          <i data-lucide="calendar-check" class="w-6 h-6"></i>
+      
+      <!-- ==================== 當月份月曆區塊 ==================== -->
+      <section class="white-card rounded-2xl p-4 sm:p-5 mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <h2 id="calendarMonthTitle" class="text-base sm:text-lg font-bold text-slate-900 tracking-tight"></h2>
+            <button onclick="goToCurrentMonth()" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors">今天</button>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button onclick="prevMonth()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors" title="上個月">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <button onclick="nextMonth()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors" title="下個月">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
-        <p class="text-slate-600 font-medium">目前沒有待辦的未結束行程</p>
-      </div>
+
+        <!-- 星期欄頭 -->
+        <div class="grid grid-cols-7 text-center text-xs font-semibold mb-2 py-1.5 bg-slate-50 rounded-xl text-slate-500">
+          <span class="text-rose-500 font-bold">日</span>
+          <span>一</span>
+          <span>二</span>
+          <span>三</span>
+          <span>四</span>
+          <span>五</span>
+          <span class="text-rose-500 font-bold">六</span>
+        </div>
+
+        <!-- 日曆網格 -->
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5 text-xs">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- 圖例 -->
+        <div class="flex flex-wrap items-center gap-3 pt-3.5 mt-3.5 border-t border-slate-100 text-[11px] text-slate-500">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span>節慶假日</span>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+            <span>拍攝工作</span>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+            <span>旅行</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 倒數清單區塊 (依倒數天數排序) ==================== -->
+      <section>
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h2 class="text-base font-bold text-slate-900 tracking-tight">行程倒數清單</h2>
+          <span id="eventCountBadge" class="text-xs text-slate-400 font-medium"></span>
+        </div>
+
+        <div id="eventsList" class="space-y-4">
+          <!-- Rendered dynamically by JavaScript -->
+        </div>
+
+        <!-- 空白狀態 (如果沒有未來的行程) -->
+        <div id="emptyState" class="hidden text-center py-16">
+          <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+            <i data-lucide="calendar-check" class="w-6 h-6"></i>
+          </div>
+          <p class="text-slate-600 font-medium">目前沒有待辦的未結束行程</p>
+        </div>
+      </section>
+
     </main>
 
     <!-- Footer -->
@@ -173,6 +242,75 @@
     // 密碼 SHA-256 Hash ("0310" 的 Hash 值)
     const AUTH_HASH = "408a5ee676694af19215cb22b2cd871e39c693f907933583ece00eda8d73ee16";
     const STORAGE_KEY = "schedule_auth_token_0310";
+
+    // 台灣節慶假日資料庫 (同步自 Google 日曆 台灣節慶假日)
+    const HOLIDAYS = {
+      "2026-01-01": "元旦",
+      "2026-02-04": "農民節",
+      "2026-02-14": "春節連假",
+      "2026-02-15": "春節連假",
+      "2026-02-16": "除夕",
+      "2026-02-17": "春節",
+      "2026-02-18": "初二",
+      "2026-02-19": "初三",
+      "2026-02-20": "初四",
+      "2026-02-21": "初五",
+      "2026-02-22": "初六",
+      "2026-02-27": "和平紀念補假",
+      "2026-02-28": "和平紀念日",
+      "2026-03-03": "元宵節",
+      "2026-03-08": "婦女節",
+      "2026-03-29": "青年節",
+      "2026-04-03": "兒童節補假",
+      "2026-04-04": "兒童節",
+      "2026-04-05": "清明節",
+      "2026-04-06": "清明節補假",
+      "2026-05-01": "勞動節",
+      "2026-06-19": "端午節",
+      "2026-08-27": "中元節",
+      "2026-09-03": "軍人節",
+      "2026-09-25": "中秋節",
+      "2026-09-28": "教師節",
+      "2026-10-09": "國慶日補假",
+      "2026-10-10": "國慶日",
+      "2026-10-18": "重陽節",
+      "2026-10-25": "台灣光復節",
+      "2026-10-26": "光復節補假",
+      "2026-12-22": "冬至",
+      "2026-12-25": "行憲紀念日",
+      "2027-01-01": "元旦",
+      "2027-02-04": "農民節",
+      "2027-02-05": "除夕",
+      "2027-02-06": "春節",
+      "2027-02-07": "初二",
+      "2027-02-08": "初三",
+      "2027-02-09": "初四",
+      "2027-02-10": "初五",
+      "2027-02-20": "元宵節",
+      "2027-02-28": "和平紀念日",
+      "2027-03-01": "和平紀念補假",
+      "2027-03-08": "婦女節",
+      "2027-03-29": "青年節",
+      "2027-04-04": "兒童節",
+      "2027-04-05": "清明節",
+      "2027-04-06": "兒童節補假",
+      "2027-04-30": "勞動節補假",
+      "2027-05-01": "勞動節",
+      "2027-06-09": "端午節",
+      "2027-08-16": "中元節",
+      "2027-09-03": "軍人節",
+      "2027-09-15": "中秋節",
+      "2027-09-28": "教師節",
+      "2027-10-08": "重陽節",
+      "2027-10-10": "國慶日",
+      "2027-10-11": "國慶日補假",
+      "2027-10-25": "光復節",
+      "2027-12-22": "冬至",
+      "2027-12-24": "行憲紀念補假",
+      "2027-12-25": "行憲紀念日",
+      "2027-12-31": "元旦補假",
+      "2028-01-01": "元旦"
+    };
 
     // 7 筆同步至 Google 日曆的行程資料庫
     const EVENTS_DATA = [
@@ -255,6 +393,10 @@
       }
     ];
 
+    // 目前月曆瀏覽年份與月份
+    let currentCalYear = new Date().getFullYear();
+    let currentCalMonth = new Date().getMonth(); // 0-indexed
+
     // SHA-256 密碼雜湊運算
     async function sha256(str) {
       const buf = new TextEncoder().encode(str);
@@ -262,7 +404,7 @@
       return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // 檢查登入狀態
+    // 初始化
     window.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       checkAuth();
@@ -324,6 +466,7 @@
       }, 300);
       document.getElementById("mainDashboard").classList.remove("hidden");
       renderPortal();
+      renderCalendar(currentCalYear, currentCalMonth);
       startTimers();
     }
 
@@ -332,7 +475,138 @@
       location.reload();
     }
 
-    // 渲染頁面：僅過濾未結束行程，並依倒數天數依序排列
+    // ==================== 月曆繪製與切換邏輯 ====================
+    function prevMonth() {
+      currentCalMonth--;
+      if (currentCalMonth < 0) {
+        currentCalMonth = 11;
+        currentCalYear--;
+      }
+      renderCalendar(currentCalYear, currentCalMonth);
+    }
+
+    function nextMonth() {
+      currentCalMonth++;
+      if (currentCalMonth > 11) {
+        currentCalMonth = 0;
+        currentCalYear++;
+      }
+      renderCalendar(currentCalYear, currentCalMonth);
+    }
+
+    function goToCurrentMonth() {
+      const now = new Date();
+      currentCalYear = now.getFullYear();
+      currentCalMonth = now.getMonth();
+      renderCalendar(currentCalYear, currentCalMonth);
+    }
+
+    function renderCalendar(year, month) {
+      document.getElementById("calendarMonthTitle").textContent = `${year} 年 ${month + 1} 月`;
+      const grid = document.getElementById("calendarGrid");
+      grid.innerHTML = "";
+
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      // 取得該月第一天是星期幾 (0=日, 1=一, ...)
+      const firstDayOfWeek = new Date(year, month, 1).getDay();
+      // 取得該月總天數
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      // 取得上個月總天數
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+      // 1. 填補上個月的尾巴
+      for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+        const d = daysInPrevMonth - i;
+        const cell = document.createElement("div");
+        cell.className = "cal-cell p-1 rounded-xl bg-slate-50/50 text-slate-300 flex flex-col justify-start items-center";
+        cell.innerHTML = `<span class="text-[11px] font-medium">${d}</span>`;
+        grid.appendChild(cell);
+      }
+
+      // 2. 當月所有日期
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayOfWeek = new Date(year, month, day).getDay();
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const isToday = (dateStr === todayStr);
+
+        // 檢查特殊節日
+        const holidayName = HOLIDAYS[dateStr];
+
+        // 檢查是否有 Google 日曆行程
+        const dayEvents = EVENTS_DATA.filter(e => {
+          const startStr = e.startDate.substring(0, 10);
+          const endStr = e.endDate.substring(0, 10);
+          return dateStr >= startStr && dateStr <= endStr;
+        });
+
+        const cell = document.createElement("div");
+        const cellBg = isToday ? "bg-blue-50/80 border border-blue-300/80" : (dayEvents.length > 0 ? "bg-white border border-slate-200 shadow-sm" : "bg-white/60 hover:bg-white border border-slate-100");
+        cell.className = `cal-cell p-1 sm:p-1.5 rounded-xl ${cellBg} flex flex-col justify-start items-center relative overflow-hidden`;
+
+        // 日期數字
+        let dateNumClass = "text-xs font-semibold ";
+        if (isToday) {
+          dateNumClass += "w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold";
+        } else if (holidayName || isWeekend) {
+          dateNumClass += "text-rose-600";
+        } else {
+          dateNumClass += "text-slate-800";
+        }
+
+        let innerHTML = `<span class="${dateNumClass}">${day}</span>`;
+
+        // 特殊節日文字 (最多顯示 4 個字)
+        if (holidayName) {
+          innerHTML += `<span class="text-[9px] font-bold text-rose-500 truncate max-w-full leading-tight mt-0.5" title="${holidayName}">${holidayName}</span>`;
+        }
+
+        // Google 日曆活動標記
+        if (dayEvents.length > 0) {
+          dayEvents.forEach(ev => {
+            const isWork = ev.type === "work";
+            const badgeBg = isWork ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-sky-50 text-sky-700 border-sky-200";
+            innerHTML += `
+              <div 
+                onclick="scrollToEvent('card-${ev.id}')"
+                class="mt-1 w-full text-[9px] sm:text-[10px] font-bold px-1 py-0.5 rounded-md ${badgeBg} border truncate cursor-pointer hover:opacity-80 transition-opacity" 
+                title="${ev.title} (${ev.location})"
+              >
+                ${ev.title}
+              </div>
+            `;
+          });
+        }
+
+        cell.innerHTML = innerHTML;
+        grid.appendChild(cell);
+      }
+
+      // 3. 填補下個月開頭使其補滿 7 的倍數 (保持月曆高度整齊)
+      const totalCells = firstDayOfWeek + daysInMonth;
+      const nextDays = (7 - (totalCells % 7)) % 7;
+      for (let day = 1; day <= nextDays; day++) {
+        const cell = document.createElement("div");
+        cell.className = "cal-cell p-1 rounded-xl bg-slate-50/50 text-slate-300 flex flex-col justify-start items-center";
+        cell.innerHTML = `<span class="text-[11px] font-medium">${day}</span>`;
+        grid.appendChild(cell);
+      }
+
+      lucide.createIcons();
+    }
+
+    function scrollToEvent(cardId) {
+      const elem = document.getElementById(cardId);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        elem.classList.add("ring-2", "ring-blue-500");
+        setTimeout(() => elem.classList.remove("ring-2", "ring-blue-500"), 1500);
+      }
+    }
+
+    // ==================== 倒數清單渲染邏輯 ====================
     function renderPortal() {
       const now = new Date();
 
@@ -344,25 +618,26 @@
 
       const listContainer = document.getElementById("eventsList");
       const emptyState = document.getElementById("emptyState");
+      const countBadge = document.getElementById("eventCountBadge");
       listContainer.innerHTML = "";
 
       if (upcomingEvents.length === 0) {
         emptyState.classList.remove("hidden");
+        countBadge.textContent = "0 筆";
         return;
       } else {
         emptyState.classList.add("hidden");
+        countBadge.textContent = `共 ${upcomingEvents.length} 筆待辦`;
       }
 
       upcomingEvents.forEach((event, idx) => {
-        const target = new Date(event.startDate);
-        const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-        
         // 分類樣式（拍攝工作：粉色；旅行：淺藍色）
         const categoryBadge = event.type === "work" 
           ? `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/80"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>拍攝工作</span>`
           : `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-600 border border-sky-200/80"><span class="w-1.5 h-1.5 rounded-full bg-sky-500 mr-1.5"></span>旅行</span>`;
 
         const card = document.createElement("div");
+        card.id = `card-${event.id}`;
         card.className = "white-card rounded-2xl p-5 transition-all";
         card.innerHTML = `
           <div class="flex items-start justify-between gap-4">
@@ -372,7 +647,7 @@
                 ${categoryBadge}
                 <span class="text-xs font-medium text-slate-500">${event.dateString}</span>
               </div>
-              <h3 class="text-lg font-bold text-slate-900 tracking-tight leading-snug truncate">${event.title}</h3>
+              <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words">${event.title}</h3>
               <p class="text-xs text-slate-500 mt-1 flex items-center">
                 <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
                 <span class="truncate">${event.location}</span>
