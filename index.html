@@ -526,7 +526,20 @@
         const res = await fetch(GAS_API_URL);
         const data = await res.json();
         if (data && data.status === "success" && Array.isArray(data.events)) {
-          EVENTS_DATA = data.events;
+          // 自動智慧補強分類判定 (登山/爬山/露營/旅行 -> 淺藍色旅行標籤)
+          EVENTS_DATA = data.events.map(ev => {
+            const title = (ev.title || "").toLowerCase();
+            if (title.includes("登山") || title.includes("爬山") || title.includes("露營") || title.includes("旅行") || title.includes("旅遊") || title.includes("度假") || title.includes("出國")) {
+              return { ...ev, category: "旅行 / 戶外", type: "travel" };
+            }
+            if (title.includes("生日")) {
+              return { ...ev, category: "生日慶祝", type: "travel" };
+            }
+            if (title.includes("同學會") || title.includes("聚會") || title.includes("聚餐")) {
+              return { ...ev, category: "聚會活動", type: "work" };
+            }
+            return ev;
+          });
           renderPortal();
           renderCalendar(currentCalYear, currentCalMonth);
           if (statusText) statusText.textContent = "已連線 Google 日曆 (即時)";
