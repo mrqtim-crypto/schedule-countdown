@@ -148,14 +148,21 @@
       <div>
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">行程倒數看板</h1>
         <p class="text-xs text-slate-500 mt-0.5 flex items-center space-x-1.5">
-          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Google 日曆同步中</span>
+          <span id="syncStatusDot" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="syncStatusText">Google 日曆同步中</span>
           <span class="text-slate-300">|</span>
           <span id="currentTimeDisplay" class="font-mono text-slate-400"></span>
         </p>
       </div>
 
       <div class="flex items-center space-x-2">
+        <button 
+          onclick="promptSetGasUrl()" 
+          class="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-blue-600 transition-all text-xs flex items-center space-x-1 shadow-sm"
+          title="設定 Google 日曆即時連線 API"
+        >
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
         <a 
           href="https://calendar.google.com/" 
           target="_blank" 
@@ -264,6 +271,9 @@
     const AUTH_HASH = "408a5ee676694af19215cb22b2cd871e39c693f907933583ece00eda8d73ee16";
     const STORAGE_KEY = "schedule_auth_token_0310";
 
+    // Google Apps Script 即時同步 API 網址 (可由 localStorage 或程式設定)
+    let GAS_API_URL = localStorage.getItem("gas_api_url") || "";
+
     // 台灣節慶假日資料庫 (同步自 Google 日曆 台灣節慶假日)
     const HOLIDAYS = {
       "2026-01-01": "元旦",
@@ -333,8 +343,8 @@
       "2028-01-01": "元旦"
     };
 
-    // 7 筆同步至 Google 日曆的行程資料庫
-    const EVENTS_DATA = [
+    // 同步至 Google 日曆的行程資料庫 (預設/離線快取資料)
+    let EVENTS_DATA = [
       {
         id: "echn0r6ug7nkkugce6f95oiugo",
         title: "內湖週歲拍攝",
@@ -501,6 +511,52 @@
       renderCalendar(currentCalYear, currentCalMonth);
       setupCalendarGestures();
       startTimers();
+      fetchLiveCalendarEvents();
+    }
+
+    // 連線 Google Apps Script 即時 API 取得最新日曆
+    async function fetchLiveCalendarEvents() {
+      if (!GAS_API_URL) return;
+      const statusText = document.getElementById("syncStatusText");
+      const statusDot = document.getElementById("syncStatusDot");
+      if (statusText) statusText.textContent = "即時同步中...";
+      if (statusDot) statusDot.className = "inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+
+      try {
+        const res = await fetch(GAS_API_URL);
+        const data = await res.json();
+        if (data && data.status === "success" && Array.isArray(data.events)) {
+          EVENTS_DATA = data.events;
+          renderPortal();
+          renderCalendar(currentCalYear, currentCalMonth);
+          if (statusText) statusText.textContent = "已連線 Google 日曆 (即時)";
+          if (statusDot) statusDot.className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
+        }
+      } catch (e) {
+        console.warn("無法取得 Google 日曆即時資料，使用快取資料:", e);
+        if (statusText) statusText.textContent = "Google 日曆同步中";
+        if (statusDot) statusDot.className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
+      }
+    }
+
+    // 設定 / 更改 Google Apps Script Web App 網址
+    function promptSetGasUrl() {
+      const current = localStorage.getItem("gas_api_url") || "";
+      const input = prompt("請輸入 Google Apps Script 網頁應用程式網址 (Web App URL)：", current);
+      if (input !== null) {
+        const trimmed = input.trim();
+        if (trimmed) {
+          localStorage.setItem("gas_api_url", trimmed);
+          GAS_API_URL = trimmed;
+          fetchLiveCalendarEvents();
+          alert("已儲存即時同步 API 網址！正在連線抓取最新行程...");
+        } else {
+          localStorage.removeItem("gas_api_url");
+          GAS_API_URL = "";
+          alert("已清除即時同步 API 網址，將使用預設資料。");
+          location.reload();
+        }
+      }
     }
 
     function lockPortal() {
