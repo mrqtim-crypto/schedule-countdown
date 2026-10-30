@@ -618,7 +618,7 @@
     window.addEventListener("DOMContentLoaded", () => {
       checkAuth();
       setupPinInput();
-      setupVisibilityHandler();
+      setupLifecycleHandlers();
     });
 
     function checkAuth() {
@@ -691,21 +691,67 @@
       location.reload();
     }
 
-    // 智慧省電優化：當螢幕鎖定或切換分頁時暫停定時器
-    function setupVisibilityHandler() {
+    // iOS 主畫面 App / 瀏覽器專用智慧生命週期管理：離開時完全停止運作，0 背景耗電與 0 流量
+    let liveAbortController = null;
+    let isAppForeground = true;
+    let lastActiveTimestamp = Date.now();
+
+    function pauseAllActivities() {
+      isAppForeground = false;
+      // 1. 立即清除倒數定時器，徹底停止 JS 計算與 DOM 重繪，CPU 負載降為 0
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      // 2. 中斷進行中的網路連線，避免背景耗電與浪費傳輸流量
+      if (liveAbortController) {
+        try { liveAbortController.abort(); } catch (_) {}
+        liveAbortController = null;
+      }
+    }
+
+    function resumeActivities() {
+      // 僅在使用者回到前景時啟動
+      if (isAppForeground && timerInterval) return;
+      isAppForeground = true;
+
+      const mainDashboard = document.getElementById("mainDashboard");
+      if (!mainDashboard || mainDashboard.classList.contains("hidden")) return;
+
+      // 1. 立即根據當前系統時間校正倒數並重新啟動每秒定時器
+      updateCountdowns();
+      if (!timerInterval) {
+        timerInterval = setInterval(updateCountdowns, 1000);
+      }
+
+      // 2. 若背景休眠超過 5 分鐘，返回時順便輕量檢查 Google 日曆
+      const now = Date.now();
+      if (now - lastActiveTimestamp > 300000) {
+        fetchLiveCalendarEvents();
+      }
+      lastActiveTimestamp = now;
+    }
+
+    function setupLifecycleHandlers() {
+      // 監聽螢幕鎖定、切換 App、回桌面
       document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
-          if (timerInterval) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-          }
+          pauseAllActivities();
         } else {
-          updateCountdowns();
-          if (!timerInterval) {
-            timerInterval = setInterval(updateCountdowns, 1000);
-          }
+          resumeActivities();
         }
       });
+
+      // iOS Safari / Standalone PWA 完整生命週期掛鉤
+      window.addEventListener("pagehide", pauseAllActivities);
+      window.addEventListener("pageshow", resumeActivities);
+      window.addEventListener("freeze", pauseAllActivities);
+      window.addEventListener("resume", resumeActivities);
+      window.addEventListener("blur", () => {
+        // 部分 iOS 機型下拉控制中心或通知中心時觸發 blur
+        pauseAllActivities();
+      });
+      window.addEventListener("focus", resumeActivities);
     }
 
     // 連線 Google Apps Script 即時 API (非同步背景讀取，零阻塞 UI)
@@ -720,9 +766,14 @@
       }
 
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 9000);
-        const res = await fetch(GAS_API_URL, { signal: controller.signal });
+        if (liveAbortController) {
+          try { liveAbortController.abort(); } catch (_) {}
+        }
+        liveAbortController = new AbortController();
+        const timeoutId = setTimeout(() => {
+          if (liveAbortController) liveAbortController.abort();
+        }, 9000);
+        const res = await fetch(GAS_API_URL, { signal: liveAbortController.signal });
         clearTimeout(timeoutId);
         
         const data = await res.json();
