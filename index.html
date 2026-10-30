@@ -5,94 +5,266 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>行程倒數看板 | Mr. Q</title>
   
+  <!-- Preconnect to Google Cloud API for zero-latency live sync -->
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.google.com">
+  
   <!-- iOS PWA / Web Clip Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="行程倒數">
   <meta name="theme-color" content="#ffffff">
   
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
+  <!-- High Performance Inlined CSS (Zero external render-blocking scripts, instant FCP) -->
   <style>
+    *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; border: 0 solid #e2e8f0; }
+    html { -webkit-text-size-adjust: 100%; tab-size: 4; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; }
     body {
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+      -webkit-user-select: none;
       background-color: #f8fafc;
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: #0f172a;
+      overflow-x: hidden;
     }
-    
+
+    /* Layout & Utilities */
+    .container { width: 100%; max-width: 42rem; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+    .flex { display: flex; }
+    .inline-flex { display: inline-flex; }
+    .grid { display: grid; }
+    .grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .justify-center { justify-content: center; }
+    .justify-between { justify-content: space-between; }
+    .justify-start { justify-content: flex-start; }
+    .flex-1 { flex: 1 1 0%; }
+    .flex-shrink-0 { flex-shrink: 0; }
+    .min-w-0 { min-width: 0; }
+    .w-full { width: 100%; }
+    .max-w-sm { max-width: 24rem; }
+    .relative { position: relative; }
+    .fixed { position: fixed; }
+    .inset-0 { inset: 0; }
+    .z-50 { z-index: 50; }
+    .hidden { display: none !important; }
+    .block { display: block; }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .break-words { overflow-wrap: break-word; }
+
+    /* Spacing */
+    .p-1 { padding: 0.25rem; }
+    .p-1\.5 { padding: 0.375rem; }
+    .p-2 { padding: 0.5rem; }
+    .p-2\.5 { padding: 0.625rem; }
+    .p-4 { padding: 1rem; }
+    .p-5 { padding: 1.25rem; }
+    .p-8 { padding: 2rem; }
+    .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+    .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+    .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+    .pt-safe { padding-top: max(1.25rem, env(safe-area-inset-top, 20px)); }
+    .pb-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 24px)); }
+
+    .gap-1 { gap: 0.25rem; }
+    .gap-1\.5 { gap: 0.375rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-4 { gap: 1rem; }
+    .space-x-1 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.25rem; }
+    .space-x-1\.5 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.375rem; }
+    .space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
+    .space-x-3\.5 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.875rem; }
+    .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-5 { margin-bottom: 1.25rem; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .mt-0\.5 { margin-top: 0.125rem; }
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-2\.5 { margin-top: 0.625rem; }
+    .mt-3\.5 { margin-top: 0.875rem; }
+    .mt-5 { margin-top: 1.25rem; }
+    .mt-16 { margin-top: 4rem; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .mx-0\.5 { margin-left: 0.125rem; margin-right: 0.125rem; }
+    .mr-1 { margin-right: 0.25rem; }
+    .mr-1\.5 { margin-right: 0.375rem; }
+
+    /* Typography */
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-base { font-size: 1rem; line-height: 1.5rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .font-medium { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+    .font-extrabold { font-weight: 800; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
+    .tracking-tight { letter-spacing: -0.025em; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .uppercase { text-transform: uppercase; }
+    .leading-snug { line-height: 1.375; }
+    .leading-tight { line-height: 1.25; }
+
+    /* Colors */
+    .text-white { color: #ffffff; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-500 { color: #64748b; }
+    .text-slate-600 { color: #475569; }
+    .text-slate-800 { color: #1e293b; }
+    .text-slate-900 { color: #0f172a; }
+    .text-blue-600 { color: #2563eb; }
+    .text-blue-700 { color: #1d4ed8; }
+    .text-rose-500 { color: #f43f5e; }
+    .text-rose-600 { color: #e11d48; }
+    .text-rose-700 { color: #be123c; }
+    .text-sky-600 { color: #0284c7; }
+    .text-sky-700 { color: #0369a1; }
+    .text-emerald-500 { color: #10b981; }
+    .text-emerald-600 { color: #059669; }
+
+    .bg-white { background-color: #ffffff; }
+    .bg-white\/60 { background-color: rgba(255, 255, 255, 0.6); }
+    .bg-slate-50 { background-color: #f8fafc; }
+    .bg-slate-50\/50 { background-color: rgba(248, 250, 252, 0.5); }
+    .bg-slate-100 { background-color: #f1f5f9; }
+    .bg-slate-200 { background-color: #e2e8f0; }
+    .bg-slate-900 { background-color: #0f172a; }
+    .bg-slate-900\/40 { background-color: rgba(15, 23, 42, 0.4); }
+    .bg-blue-50 { background-color: #eff6ff; }
+    .bg-blue-50\/80 { background-color: rgba(239, 246, 255, 0.8); }
+    .bg-blue-600 { background-color: #2563eb; }
+    .bg-rose-50 { background-color: #fff1f2; }
+    .bg-rose-500 { background-color: #f43f5e; }
+    .bg-sky-50 { background-color: #f0f9ff; }
+    .bg-sky-500 { background-color: #0ea5e9; }
+    .bg-emerald-500 { background-color: #10b981; }
+    .bg-amber-400 { background-color: #fbbf24; }
+
+    /* Borders & Rounded */
+    .border { border-width: 1px; }
+    .border-2 { border-width: 2px; }
+    .border-t { border-top-width: 1px; }
+    .border-b { border-bottom-width: 1px; }
+    .border-slate-100 { border-color: #f1f5f9; }
+    .border-slate-200 { border-color: #e2e8f0; }
+    .border-slate-200\/60 { border-color: rgba(226, 232, 240, 0.6); }
+    .border-slate-200\/80 { border-color: rgba(226, 232, 240, 0.8); }
+    .border-slate-300 { border-color: #cbd5e1; }
+    .border-slate-900 { border-color: #0f172a; }
+    .border-blue-100 { border-color: #dbeafe; }
+    .border-blue-300\/80 { border-color: rgba(147, 197, 253, 0.8); }
+    .border-rose-200 { border-color: #fecdd3; }
+    .border-rose-200\/80 { border-color: rgba(254, 205, 211, 0.8); }
+    .border-sky-200 { border-color: #bae6fd; }
+    .border-sky-200\/80 { border-color: rgba(186, 230, 253, 0.8); }
+
+    .rounded-md { border-radius: 0.375rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-3xl { border-radius: 1.5rem; }
+    .rounded-full { border-radius: 9999px; }
+
+    /* Elevation & Glass */
+    .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+    .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+    .backdrop-blur-md { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
     .white-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 3px -1px rgba(0, 0, 0, 0.03);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      will-change: transform;
     }
-
     .white-card:hover {
-      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
-      border-color: #cbd5e1;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-8px); }
-      40%, 80% { transform: translateX(8px); }
-    }
-    .shake {
-      animation: shake 0.4s ease-in-out;
-    }
-    
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom, 24px);
-    }
-    .pt-safe {
-      padding-top: env(safe-area-inset-top, 20px);
+      box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.07);
     }
 
     .cal-cell {
-      min-height: 64px;
-      transition: all 0.15s ease-in-out;
+      min-height: 60px;
+      transition: background-color 0.15s ease;
     }
     @media (max-width: 640px) {
-      .cal-cell {
-        min-height: 54px;
-      }
+      .cal-cell { min-height: 52px; }
+      .container { padding-left: 0.875rem; padding-right: 0.875rem; }
     }
 
+    /* Native GPU Animations */
     @keyframes slideInRight {
-      from { opacity: 0.25; transform: translateX(24px); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0.3; transform: translate3d(20px, 0, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
     }
     @keyframes slideInLeft {
-      from { opacity: 0.25; transform: translateX(-24px); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0.3; transform: translate3d(-20px, 0, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
     }
-    .slide-in-right {
-      animation: slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .slide-in-right { animation: slideInRight 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .slide-in-left { animation: slideInLeft 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @keyframes shake {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      20%, 60% { transform: translate3d(-6px, 0, 0); }
+      40%, 80% { transform: translate3d(6px, 0, 0); }
     }
-    .slide-in-left {
-      animation: slideInLeft 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .shake { animation: shake 0.35s ease-in-out; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
+    .animate-pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+    /* Touch & Click targets */
+    button, a {
+      cursor: pointer;
+      text-decoration: none;
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
+    }
+    button:active, a:active { transform: scale(0.97); }
+
     #calendarSection {
       touch-action: pan-y;
-      user-select: none;
-      -webkit-user-select: none;
     }
+
+    svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
   </style>
 </head>
-<body class="antialiased selection:bg-blue-100 selection:text-blue-900">
+<body>
 
   <!-- ==================== 鎖定解鎖畫面 (白色簡約 PIN 碼) ==================== -->
-  <div id="lockScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md transition-opacity duration-300">
+  <div id="lockScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md" style="transition: opacity 0.25s ease;">
     <div id="lockCard" class="w-full max-w-sm bg-white rounded-3xl p-8 text-center flex flex-col items-center shadow-2xl border border-slate-100">
       
       <!-- Lock Icon -->
-      <div class="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-5 shadow-sm">
-        <i data-lucide="lock" class="w-7 h-7"></i>
+      <div class="rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-5 shadow-sm" style="width: 3.5rem; height: 3.5rem;">
+        <svg style="width: 1.75rem; height: 1.75rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </div>
 
       <h1 class="text-xl font-bold tracking-tight text-slate-900 mb-1">行程倒數看板</h1>
@@ -100,10 +272,10 @@
 
       <!-- PIN Indicator Dots -->
       <div class="flex justify-center space-x-3.5 mb-6">
-        <div id="dot1" class="w-3 h-3 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-        <div id="dot2" class="w-3 h-3 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-        <div id="dot3" class="w-3 h-3 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-        <div id="dot4" class="w-3 h-3 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+        <div id="dot1" class="border-2 border-slate-300 rounded-full" style="width: 0.75rem; height: 0.75rem; transition: all 0.15s ease;"></div>
+        <div id="dot2" class="border-2 border-slate-300 rounded-full" style="width: 0.75rem; height: 0.75rem; transition: all 0.15s ease;"></div>
+        <div id="dot3" class="border-2 border-slate-300 rounded-full" style="width: 0.75rem; height: 0.75rem; transition: all 0.15s ease;"></div>
+        <div id="dot4" class="border-2 border-slate-300 rounded-full" style="width: 0.75rem; height: 0.75rem; transition: all 0.15s ease;"></div>
       </div>
 
       <!-- Password Input Form -->
@@ -116,40 +288,41 @@
           inputmode="numeric" 
           autocomplete="current-password"
           placeholder="輸入 4 位數密碼" 
-          class="w-full text-center tracking-widest text-lg py-3 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 mb-2 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+          class="w-full text-center tracking-widest text-lg py-3 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 mb-2"
+          style="outline: none; font-size: 1.125rem;"
         />
         
-        <p id="errorMsg" class="text-xs text-rose-500 h-5 opacity-0 transition-opacity">密碼錯誤，請重新輸入</p>
+        <p id="errorMsg" class="text-xs text-rose-600 mb-2" style="opacity: 0; min-height: 1rem; transition: opacity 0.2s;">密碼錯誤，請重新輸入</p>
 
         <!-- Unlock Button -->
         <button 
           type="button" 
           onclick="verifyPassword()" 
-          class="w-full mt-1 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-md shadow-slate-900/10 transition-all active:scale-[0.98] flex items-center justify-center space-x-2"
+          class="w-full py-3.5 rounded-xl bg-slate-900 text-white font-medium shadow-md flex items-center justify-center space-x-2"
         >
           <span>解鎖查看</span>
-          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>
       </form>
 
       <!-- Remember device checkbox -->
-      <label class="flex items-center space-x-2 mt-5 cursor-pointer text-xs text-slate-500">
-        <input type="checkbox" id="rememberMe" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
+      <label class="flex items-center space-x-2 mt-5 text-xs text-slate-500" style="cursor: pointer;">
+        <input type="checkbox" id="rememberMe" checked class="rounded border-slate-300" style="accent-color: #0f172a;">
         <span>記住此裝置（下次免輸入）</span>
       </label>
     </div>
   </div>
 
-  <!-- ==================== 主要清單畫面 (白色系乾淨排版) ==================== -->
-  <div id="mainDashboard" class="hidden min-h-screen flex flex-col pt-safe pb-safe px-4 sm:px-6 max-w-2xl mx-auto">
+  <!-- ==================== 主要清單畫面 (白色系極速排版) ==================== -->
+  <div id="mainDashboard" class="hidden min-h-screen flex flex-col pt-safe pb-safe container">
     
     <!-- Top Navigation Bar -->
     <header class="flex items-center justify-between py-6 border-b border-slate-200/80 mb-6">
       <div>
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">行程倒數看板</h1>
         <p class="text-xs text-slate-500 mt-0.5 flex items-center space-x-1.5">
-          <span id="syncStatusDot" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span id="syncStatusText">Google 日曆同步中</span>
+          <span id="syncStatusDot" class="inline-block rounded-full bg-emerald-500" style="width: 0.5rem; height: 0.5rem;"></span>
+          <span id="syncStatusText">Google 日曆已連線</span>
           <span class="text-slate-300">|</span>
           <span id="currentTimeDisplay" class="font-mono text-slate-400"></span>
         </p>
@@ -158,27 +331,27 @@
       <div class="flex items-center space-x-2">
         <button 
           onclick="promptSetGasUrl()" 
-          class="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-blue-600 transition-all text-xs flex items-center space-x-1 shadow-sm"
+          class="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 text-xs flex items-center shadow-sm"
           title="設定 Google 日曆即時連線 API"
         >
-          <i data-lucide="settings" class="w-4 h-4"></i>
+          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
         <a 
           href="https://calendar.google.com/" 
           target="_blank" 
           rel="noopener noreferrer" 
-          class="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all text-xs flex items-center space-x-1 shadow-sm"
+          class="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs flex items-center space-x-1 shadow-sm"
           title="開啟 Google 日曆"
         >
-          <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
-          <span class="hidden sm:inline font-medium">日曆</span>
+          <svg style="width: 1rem; height: 1rem; color: #2563eb;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          <span style="font-weight: 500;">日曆</span>
         </a>
         <button 
           onclick="lockPortal()" 
-          class="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-rose-600 transition-all text-xs flex items-center space-x-1 shadow-sm"
+          class="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 text-xs flex items-center shadow-sm"
           title="重新上鎖"
         >
-          <i data-lucide="lock" class="w-4 h-4"></i>
+          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
       </div>
     </header>
@@ -186,19 +359,19 @@
     <main class="flex-1">
       
       <!-- ==================== 當月份月曆區塊 ==================== -->
-      <section id="calendarSection" class="white-card rounded-2xl p-4 sm:p-5 mb-8 relative select-none">
+      <section id="calendarSection" class="white-card rounded-2xl p-4 sm:p-5 mb-8 relative">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-2">
             <h2 id="calendarMonthTitle" class="text-base sm:text-lg font-bold text-slate-900 tracking-tight"></h2>
-            <button onclick="goToCurrentMonth()" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors">今天</button>
-            <span class="text-[11px] text-slate-400 font-normal">（可左右滑動）</span>
+            <button onclick="goToCurrentMonth()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium">今天</button>
+            <span class="text-xs text-slate-400">（可左右滑動）</span>
           </div>
           <div class="flex items-center space-x-1">
-            <button onclick="prevMonth()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors" title="上個月">
-              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <button onclick="prevMonth()" class="p-2 rounded-xl text-slate-600" title="上個月">
+              <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
-            <button onclick="nextMonth()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors" title="下個月">
-              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <button onclick="nextMonth()" class="p-2 rounded-xl text-slate-600" title="下個月">
+              <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </button>
           </div>
         </div>
@@ -220,17 +393,17 @@
         </div>
 
         <!-- 圖例 -->
-        <div class="flex flex-wrap items-center gap-3 pt-3.5 mt-3.5 border-t border-slate-100 text-[11px] text-slate-500">
+        <div class="flex items-center gap-3 pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500" style="font-size: 0.6875rem;">
           <div class="flex items-center space-x-1.5">
-            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span class="rounded-full bg-rose-500" style="width: 0.5rem; height: 0.5rem;"></span>
             <span>節慶假日</span>
           </div>
           <div class="flex items-center space-x-1.5">
-            <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+            <span class="rounded-full bg-rose-500" style="width: 0.5rem; height: 0.5rem; background-color: #f43f5e;"></span>
             <span>拍攝工作</span>
           </div>
           <div class="flex items-center space-x-1.5">
-            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+            <span class="rounded-full bg-sky-500" style="width: 0.5rem; height: 0.5rem;"></span>
             <span>旅行</span>
           </div>
         </div>
@@ -249,8 +422,8 @@
 
         <!-- 空白狀態 (如果沒有未來的行程) -->
         <div id="emptyState" class="hidden text-center py-16">
-          <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-            <i data-lucide="calendar-check" class="w-6 h-6"></i>
+          <div class="rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3" style="width: 3rem; height: 3rem;">
+            <svg style="width: 1.5rem; height: 1.5rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
           </div>
           <p class="text-slate-600 font-medium">目前沒有待辦的未結束行程</p>
         </div>
@@ -265,107 +438,51 @@
 
   </div>
 
-  <!-- ==================== JavaScript 核心邏輯 ==================== -->
+  <!-- ==================== JavaScript 高效核心邏輯 ==================== -->
   <script>
+    'use strict';
+
     // 密碼 SHA-256 Hash ("0310" 的 Hash 值)
     const AUTH_HASH = "408a5ee676694af19215cb22b2cd871e39c693f907933583ece00eda8d73ee16";
     const STORAGE_KEY = "schedule_auth_token_0310";
+    const CACHE_EVENTS_KEY = "schedule_cached_events_v2";
 
-    // Google Apps Script 即時同步 API 網址 (已預先設定專屬 Web App URL)
+    // Google Apps Script 即時同步 API 網址
     let GAS_API_URL = localStorage.getItem("gas_api_url") || "https://script.google.com/macros/s/AKfycbxUsCofRyThB4b66SUp28wjCg78KRc3hS8eKgZi_jXVJTNvLlsWagSdIPqDDm4XLCU5/exec";
 
-    // 台灣節慶假日資料庫 (同步自 Google 日曆 台灣節慶假日)
+    // 台灣節慶假日資料庫 (純前端離線字典，O(1) 瞬時查詢)
     const HOLIDAYS = {
-      "2026-01-01": "元旦",
-      "2026-02-04": "農民節",
-      "2026-02-14": "春節連假",
-      "2026-02-15": "春節連假",
-      "2026-02-16": "除夕",
-      "2026-02-17": "春節",
-      "2026-02-18": "初二",
-      "2026-02-19": "初三",
-      "2026-02-20": "初四",
-      "2026-02-21": "初五",
-      "2026-02-22": "初六",
-      "2026-02-27": "和平紀念補假",
-      "2026-02-28": "和平紀念日",
-      "2026-03-03": "元宵節",
-      "2026-03-08": "婦女節",
-      "2026-03-29": "青年節",
-      "2026-04-03": "兒童節補假",
-      "2026-04-04": "兒童節",
-      "2026-04-05": "清明節",
-      "2026-04-06": "清明節補假",
-      "2026-05-01": "勞動節",
-      "2026-06-19": "端午節",
-      "2026-08-27": "中元節",
-      "2026-09-03": "軍人節",
-      "2026-09-25": "中秋節",
-      "2026-09-28": "教師節",
-      "2026-10-09": "國慶日補假",
-      "2026-10-10": "國慶日",
-      "2026-10-18": "重陽節",
-      "2026-10-25": "台灣光復節",
-      "2026-10-26": "光復節補假",
-      "2026-12-22": "冬至",
-      "2026-12-25": "行憲紀念日",
-      "2027-01-01": "元旦",
-      "2027-02-04": "農民節",
-      "2027-02-05": "除夕",
-      "2027-02-06": "春節",
-      "2027-02-07": "初二",
-      "2027-02-08": "初三",
-      "2027-02-09": "初四",
-      "2027-02-10": "初五",
-      "2027-02-20": "元宵節",
-      "2027-02-28": "和平紀念日",
-      "2027-03-01": "和平紀念補假",
-      "2027-03-08": "婦女節",
-      "2027-03-29": "青年節",
-      "2027-04-04": "兒童節",
-      "2027-04-05": "清明節",
-      "2027-04-06": "兒童節補假",
-      "2027-04-30": "勞動節補假",
-      "2027-05-01": "勞動節",
-      "2027-06-09": "端午節",
-      "2027-08-16": "中元節",
-      "2027-09-03": "軍人節",
-      "2027-09-15": "中秋節",
-      "2027-09-28": "教師節",
-      "2027-10-08": "重陽節",
-      "2027-10-10": "國慶日",
-      "2027-10-11": "國慶日補假",
-      "2027-10-25": "光復節",
-      "2027-12-22": "冬至",
-      "2027-12-24": "行憲紀念補假",
-      "2027-12-25": "行憲紀念日",
-      "2027-12-31": "元旦補假",
+      "2026-01-01": "元旦", "2026-02-04": "農民節", "2026-02-14": "春節連假", "2026-02-15": "春節連假",
+      "2026-02-16": "除夕", "2026-02-17": "春節", "2026-02-18": "初二", "2026-02-19": "初三",
+      "2026-02-20": "初四", "2026-02-21": "初五", "2026-02-22": "初六", "2026-02-27": "和平紀念補假",
+      "2026-02-28": "和平紀念日", "2026-03-03": "元宵節", "2026-03-08": "婦女節", "2026-03-29": "青年節",
+      "2026-04-03": "兒童節補假", "2026-04-04": "兒童節", "2026-04-05": "清明節", "2026-04-06": "清明節補假",
+      "2026-05-01": "勞動節", "2026-06-19": "端午節", "2026-08-27": "中元節", "2026-09-03": "軍人節",
+      "2026-09-25": "中秋節", "2026-09-28": "教師節", "2026-10-09": "國慶日補假", "2026-10-10": "國慶日",
+      "2026-10-18": "重陽節", "2026-10-25": "台灣光復節", "2026-10-26": "光復節補假", "2026-12-22": "冬至",
+      "2026-12-25": "行憲紀念日", "2027-01-01": "元旦", "2027-02-04": "農民節", "2027-02-05": "除夕",
+      "2027-02-06": "春節", "2027-02-07": "初二", "2027-02-08": "初三", "2027-02-09": "初四",
+      "2027-02-10": "初五", "2027-02-20": "元宵節", "2027-02-28": "和平紀念日", "2027-03-01": "和平紀念補假",
+      "2027-03-08": "婦女節", "2027-03-29": "青年節", "2027-04-04": "兒童節", "2027-04-05": "清明節",
+      "2027-04-06": "兒童節補假", "2027-04-30": "勞動節補假", "2027-05-01": "勞動節", "2027-06-09": "端午節",
+      "2027-08-16": "中元節", "2027-09-03": "軍人節", "2027-09-15": "中秋節", "2027-09-28": "教師節",
+      "2027-10-08": "重陽節", "2027-10-10": "國慶日", "2027-10-11": "國慶日補假", "2027-10-25": "光復節",
+      "2027-12-22": "冬至", "2027-12-24": "行憲紀念補假", "2027-12-25": "行憲紀念日", "2027-12-31": "元旦補假",
       "2028-01-01": "元旦"
     };
 
-    // 同步至 Google 日曆的行程資料庫 (預設/離線快取資料)
+    // 基準預設/快取資料 (優先讀取本機快取以達成 0 延遲秒開)
     let EVENTS_DATA = [
-      {
-        id: "echn0r6ug7nkkugce6f95oiugo",
-        title: "內湖週歲拍攝",
-        category: "拍攝工作",
-        type: "work",
-        startDate: "2026-10-18T00:00:00",
-        endDate: "2026-10-18T23:59:59",
-        dateString: "2026/10/18 (日)",
-        location: "台北市內湖區",
-        calLink: "https://www.google.com/calendar/event?eid=ZWNobjByNnVnN25ra3VnY2U2Zjk1b2l1Z28gbXJxdGltQG0"
-      },
       {
         id: "panreg9jki5af1iqpgm8pj9nt0",
         title: "訂婚儀式+午宴",
         category: "拍攝工作",
         type: "work",
         startDate: "2026-11-01T00:00:00",
-        endDate: "2026-11-01T23:59:59",
+        endDate: "2026-11-02T00:00:00",
         dateString: "2026/11/01 (日)",
         location: "基隆彭園",
-        calLink: "https://www.google.com/calendar/event?eid=cGFucmVnOWpraTVhZjFpcXBnbThwajludDAgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/panreg9jki5af1iqpgm8pj9nt0"
       },
       {
         id: "bgug42mmophmt0pcsdvbn2gq20",
@@ -373,10 +490,32 @@
         category: "拍攝工作",
         type: "work",
         startDate: "2026-11-07T00:00:00",
-        endDate: "2026-11-08T23:59:59",
+        endDate: "2026-11-09T00:00:00",
         dateString: "2026/11/07 – 11/08 (跨日)",
         location: "高雄",
-        calLink: "https://www.google.com/calendar/event?eid=Ymd1ZzQybW1vcGhtdDBwY3NkdmJuMmdxMjAgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/bgug42mmophmt0pcsdvbn2gq20"
+      },
+      {
+        id: "vrdt9jcessuu1r6t78i7qmr2bg",
+        title: "百岳登山 大小劍山",
+        category: "旅行",
+        type: "travel",
+        startDate: "2026-11-20T00:00:00",
+        endDate: "2026-11-23T00:00:00",
+        dateString: "2026/11/20 – 11/22 (跨日)",
+        location: "大小劍山",
+        calLink: "https://calendar.google.com/calendar/r/eventedit/vrdt9jcessuu1r6t78i7qmr2bg"
+      },
+      {
+        id: "6p19ia9mccdvdkr1up71434b28",
+        title: "爬山 小觀音山",
+        category: "旅行",
+        type: "travel",
+        startDate: "2026-11-28T00:00:00",
+        endDate: "2026-11-29T00:00:00",
+        dateString: "2026/11/28 (六)",
+        location: "小觀音山",
+        calLink: "https://calendar.google.com/calendar/r/eventedit/6p19ia9mccdvdkr1up71434b28"
       },
       {
         id: "oojkhdud9v7h6fdtqovf3kqvok",
@@ -384,10 +523,10 @@
         category: "拍攝工作",
         type: "work",
         startDate: "2026-11-29T00:00:00",
-        endDate: "2026-11-29T23:59:59",
+        endDate: "2026-11-30T00:00:00",
         dateString: "2026/11/29 (日)",
         location: "台北",
-        calLink: "https://www.google.com/calendar/event?eid=b29qa2hkdWQ5djdoNmZkdHFvdmYza3F2b2sgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/oojkhdud9v7h6fdtqovf3kqvok"
       },
       {
         id: "hosp9mmqthtqtldpru7gqsoqqk",
@@ -406,10 +545,10 @@
         category: "拍攝工作",
         type: "work",
         startDate: "2026-12-20T00:00:00",
-        endDate: "2026-12-20T23:59:59",
+        endDate: "2026-12-21T00:00:00",
         dateString: "2026/12/20 (日)",
         location: "台中林皇宮",
-        calLink: "https://www.google.com/calendar/event?eid=ZXU3ajJoMG1kOWVxZmh2OWJjbG5kazgxNnMgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/eu7j2h0md9eqfhv9bclndk816s"
       },
       {
         id: "cg2gjc112l5i2i3cqqr34c3334",
@@ -417,10 +556,10 @@
         category: "旅行",
         type: "travel",
         startDate: "2026-12-31T00:00:00",
-        endDate: "2027-01-03T23:59:59",
-        dateString: "2026/12/31 – 2027/01/03 (4天)",
+        endDate: "2027-01-04T00:00:00",
+        dateString: "2026/12/31 – 01/03 (跨日)",
         location: "水玉妮光",
-        calLink: "https://www.google.com/calendar/event?eid=Y2cyZ2pjMTEybDVpMmkzY3FxcjM0YzMzMzQgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/cg2gjc112l5i2i3cqqr34c3334"
       },
       {
         id: "re36eiur2a7jjqvubvhbbbtab0",
@@ -428,18 +567,31 @@
         category: "拍攝工作",
         type: "work",
         startDate: "2027-04-25T00:00:00",
-        endDate: "2027-04-25T23:59:59",
+        endDate: "2027-04-26T00:00:00",
         dateString: "2027/04/25 (日)",
         location: "君品酒店(京站)",
-        calLink: "https://www.google.com/calendar/event?eid=cmUzNmVpdXIyYTdqanF2dWJ2aGJiYnRhYjAgbXJxdGltQG0"
+        calLink: "https://calendar.google.com/calendar/r/eventedit/re36eiur2a7jjqvubvhbbbtab0"
       }
     ];
 
+    // 嘗試從 localStorage 載入先前的快取資料
+    try {
+      const cached = localStorage.getItem(CACHE_EVENTS_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          EVENTS_DATA = parsed;
+        }
+      }
+    } catch (_) {}
+
     // 目前月曆瀏覽年份與月份
     let currentCalYear = new Date().getFullYear();
-    let currentCalMonth = new Date().getMonth(); // 0-indexed
+    let currentCalMonth = new Date().getMonth();
+    let timerInterval = null;
+    let cachedCountdownElements = {}; // 減少 DOM 遍歷開銷
 
-    // SHA-256 密碼雜湊運算
+    // SHA-256 運算
     async function sha256(str) {
       const buf = new TextEncoder().encode(str);
       const hashBuf = await crypto.subtle.digest("SHA-256", buf);
@@ -448,14 +600,13 @@
 
     // 初始化
     window.addEventListener("DOMContentLoaded", () => {
-      lucide.createIcons();
       checkAuth();
       setupPinInput();
+      setupVisibilityHandler();
     });
 
     function checkAuth() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === AUTH_HASH) {
+      if (localStorage.getItem(STORAGE_KEY) === AUTH_HASH) {
         unlockPortal();
       }
     }
@@ -463,22 +614,21 @@
     function setupPinInput() {
       const pin = document.getElementById("pinInput");
       pin.addEventListener("input", (e) => {
-        updateDots(e.target.value.length);
-        if (e.target.value.length === 4) {
-          verifyPassword();
+        const len = e.target.value.length;
+        for (let i = 1; i <= 4; i++) {
+          const dot = document.getElementById(`dot${i}`);
+          if (i <= len) {
+            dot.style.backgroundColor = "#0f172a";
+            dot.style.borderColor = "#0f172a";
+            dot.style.transform = "scale(1.15)";
+          } else {
+            dot.style.backgroundColor = "transparent";
+            dot.style.borderColor = "#cbd5e1";
+            dot.style.transform = "scale(1)";
+          }
         }
+        if (len === 4) verifyPassword();
       });
-    }
-
-    function updateDots(length) {
-      for (let i = 1; i <= 4; i++) {
-        const dot = document.getElementById(`dot${i}`);
-        if (i <= length) {
-          dot.classList.add("bg-slate-900", "border-slate-900", "scale-110");
-        } else {
-          dot.classList.remove("bg-slate-900", "border-slate-900", "scale-110");
-        }
-      }
     }
 
     async function verifyPassword() {
@@ -493,19 +643,25 @@
         }
         unlockPortal();
       } else {
-        errorMsg.classList.remove("opacity-0");
+        errorMsg.style.opacity = "1";
         lockCard.classList.add("shake");
-        setTimeout(() => lockCard.classList.remove("shake"), 400);
+        setTimeout(() => lockCard.classList.remove("shake"), 350);
         document.getElementById("pinInput").value = "";
-        updateDots(0);
+        for (let i = 1; i <= 4; i++) {
+          const dot = document.getElementById(`dot${i}`);
+          dot.style.backgroundColor = "transparent";
+          dot.style.borderColor = "#cbd5e1";
+          dot.style.transform = "scale(1)";
+        }
       }
     }
 
     function unlockPortal() {
-      document.getElementById("lockScreen").classList.add("opacity-0", "pointer-events-none");
-      setTimeout(() => {
-        document.getElementById("lockScreen").style.display = "none";
-      }, 300);
+      const lock = document.getElementById("lockScreen");
+      lock.style.opacity = "0";
+      lock.style.pointerEvents = "none";
+      setTimeout(() => { lock.style.display = "none"; }, 250);
+      
       document.getElementById("mainDashboard").classList.remove("hidden");
       renderPortal();
       renderCalendar(currentCalYear, currentCalMonth);
@@ -514,25 +670,54 @@
       fetchLiveCalendarEvents();
     }
 
-    // 連線 Google Apps Script 即時 API 取得最新日曆
+    function lockPortal() {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+
+    // 智慧省電優化：當螢幕鎖定或切換分頁時暫停定時器
+    function setupVisibilityHandler() {
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+          }
+        } else {
+          updateCountdowns();
+          if (!timerInterval) {
+            timerInterval = setInterval(updateCountdowns, 1000);
+          }
+        }
+      });
+    }
+
+    // 連線 Google Apps Script 即時 API (非同步背景讀取，零阻塞 UI)
     async function fetchLiveCalendarEvents() {
       if (!GAS_API_URL) return;
       const statusText = document.getElementById("syncStatusText");
       const statusDot = document.getElementById("syncStatusDot");
       if (statusText) statusText.textContent = "即時同步中...";
-      if (statusDot) statusDot.className = "inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+      if (statusDot) {
+        statusDot.style.backgroundColor = "#fbbf24";
+        statusDot.className = "inline-block rounded-full animate-pulse";
+      }
 
       try {
-        const res = await fetch(GAS_API_URL);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
+        const res = await fetch(GAS_API_URL, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         const data = await res.json();
         if (data && data.status === "success" && Array.isArray(data.events)) {
-          // 排除生日項目（生日不需倒數）
+          // 排除生日項目
           const filtered = data.events.filter(ev => {
             const title = (ev.title || "").toLowerCase();
             return !title.includes("生日");
           });
 
-          // 嚴格規則：除了「拍攝工作」相關關鍵字外，其餘全部歸為「旅行」
+          // 分類規範：僅接案/攝影工作為工作，其餘全為旅行
           EVENTS_DATA = filtered.map(ev => {
             const title = (ev.title || "").toLowerCase();
             const isWork = title.includes("拍攝") || 
@@ -547,27 +732,39 @@
                            title.includes("週歲") || 
                            title.includes("靜心同學會");
 
-            if (isWork) {
-              return { ...ev, category: "拍攝工作", type: "work" };
-            } else {
-              return { ...ev, category: "旅行", type: "travel" };
-            }
+            return {
+              ...ev,
+              category: isWork ? "拍攝工作" : "旅行",
+              type: isWork ? "work" : "travel"
+            };
           });
+
+          // 寫入本機快取供下次秒開
+          try {
+            localStorage.setItem(CACHE_EVENTS_KEY, JSON.stringify(EVENTS_DATA));
+          } catch (_) {}
+
           renderPortal();
           renderCalendar(currentCalYear, currentCalMonth);
-          if (statusText) statusText.textContent = "已連線 Google 日曆 (即時)";
-          if (statusDot) statusDot.className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
+          if (statusText) statusText.textContent = "Google 日曆已連線";
+          if (statusDot) {
+            statusDot.style.backgroundColor = "#10b981";
+            statusDot.className = "inline-block rounded-full";
+          }
         }
       } catch (e) {
         console.warn("無法取得 Google 日曆即時資料，使用快取資料:", e);
         if (statusText) statusText.textContent = "Google 日曆同步中";
-        if (statusDot) statusDot.className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
+        if (statusDot) {
+          statusDot.style.backgroundColor = "#10b981";
+          statusDot.className = "inline-block rounded-full";
+        }
       }
     }
 
     // 設定 / 更改 Google Apps Script Web App 網址
     function promptSetGasUrl() {
-      const current = localStorage.getItem("gas_api_url") || "";
+      const current = localStorage.getItem("gas_api_url") || GAS_API_URL;
       const input = prompt("請輸入 Google Apps Script 網頁應用程式網址 (Web App URL)：", current);
       if (input !== null) {
         const trimmed = input.trim();
@@ -575,19 +772,12 @@
           localStorage.setItem("gas_api_url", trimmed);
           GAS_API_URL = trimmed;
           fetchLiveCalendarEvents();
-          alert("已儲存即時同步 API 網址！正在連線抓取最新行程...");
         } else {
           localStorage.removeItem("gas_api_url");
           GAS_API_URL = "";
-          alert("已清除即時同步 API 網址，將使用預設資料。");
           location.reload();
         }
       }
-    }
-
-    function lockPortal() {
-      localStorage.removeItem(STORAGE_KEY);
-      location.reload();
     }
 
     // ==================== 月曆繪製與切換邏輯 (支援手勢滑動) ====================
@@ -621,10 +811,9 @@
       const grid = document.getElementById("calendarGrid");
       grid.innerHTML = "";
 
-      // 換月滑動過渡動畫
       grid.classList.remove("slide-in-right", "slide-in-left");
       if (direction === 'next') {
-        void grid.offsetWidth; // trigger reflow
+        void grid.offsetWidth;
         grid.classList.add("slide-in-right");
       } else if (direction === 'prev') {
         void grid.offsetWidth;
@@ -634,20 +823,18 @@
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      // 取得該月第一天是星期幾 (0=日, 1=一, ...)
       const firstDayOfWeek = new Date(year, month, 1).getDay();
-      // 取得該月總天數
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      // 取得上個月總天數
       const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-      // 1. 填補上個月的尾巴
+      const fragment = document.createDocumentFragment();
+
+      // 1. 上月尾巴
       for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-        const d = daysInPrevMonth - i;
         const cell = document.createElement("div");
         cell.className = "cal-cell p-1 rounded-xl bg-slate-50/50 text-slate-300 flex flex-col justify-start items-center";
-        cell.innerHTML = `<span class="text-[11px] font-medium">${d}</span>`;
-        grid.appendChild(cell);
+        cell.innerHTML = `<span style="font-size: 0.6875rem; font-weight: 500;">${daysInPrevMonth - i}</span>`;
+        fragment.appendChild(cell);
       }
 
       // 2. 當月所有日期
@@ -657,14 +844,12 @@
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
         const isToday = (dateStr === todayStr);
 
-        // 檢查特殊節日
         const holidayName = HOLIDAYS[dateStr];
 
-        // 檢查是否有 Google 日曆行程 (精準校正全天事件 exclusive 結束時間)
+        // 精準校正全天事件 exclusive 結束時間
         const dayEvents = EVENTS_DATA.filter(e => {
           const start = new Date(e.startDate);
           let end = new Date(e.endDate || e.startDate);
-          // 若結束時間為午夜 00:00:00 (Google 日曆全天事件的 exclusive 結束時間)，扣除 1 秒取得實際結束日
           if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0 && end > start) {
             end = new Date(end.getTime() - 1000);
           }
@@ -674,35 +859,36 @@
         });
 
         const cell = document.createElement("div");
-        const cellBg = isToday ? "bg-blue-50/80 border border-blue-300/80" : (dayEvents.length > 0 ? "bg-white border border-slate-200 shadow-sm" : "bg-white/60 hover:bg-white border border-slate-100");
+        const cellBg = isToday ? "bg-blue-50/80 border border-blue-300/80" : (dayEvents.length > 0 ? "bg-white border border-slate-200 shadow-sm" : "bg-white/60 border border-slate-100");
         cell.className = `cal-cell p-1 sm:p-1.5 rounded-xl ${cellBg} flex flex-col justify-start items-center relative overflow-hidden`;
 
-        // 日期數字
-        let dateNumClass = "text-xs font-semibold ";
+        let dateNumStyle = "font-size: 0.75rem; font-weight: 600;";
+        let dateNumContent = day;
         if (isToday) {
-          dateNumClass += "w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold";
+          dateNumContent = `<span style="display:inline-flex; width:1.25rem; height:1.25rem; border-radius:9999px; background-color:#2563eb; color:#fff; align-items:center; justify-content:center; font-weight:700;">${day}</span>`;
         } else if (holidayName || isWeekend) {
-          dateNumClass += "text-rose-600";
+          dateNumStyle += "color: #e11d48;";
+          dateNumContent = `<span style="${dateNumStyle}">${day}</span>`;
         } else {
-          dateNumClass += "text-slate-800";
+          dateNumStyle += "color: #1e293b;";
+          dateNumContent = `<span style="${dateNumStyle}">${day}</span>`;
         }
 
-        let innerHTML = `<span class="${dateNumClass}">${day}</span>`;
+        let innerHTML = dateNumContent;
 
-        // 特殊節日文字 (最多顯示 4 個字)
         if (holidayName) {
-          innerHTML += `<span class="text-[9px] font-bold text-rose-500 truncate max-w-full leading-tight mt-0.5" title="${holidayName}">${holidayName}</span>`;
+          innerHTML += `<span style="font-size: 0.5625rem; font-weight: 700; color: #f43f5e; line-height: 1.1; margin-top: 2px;" class="truncate max-w-full" title="${holidayName}">${holidayName}</span>`;
         }
 
-        // Google 日曆活動標記
         if (dayEvents.length > 0) {
           dayEvents.forEach(ev => {
             const isWork = ev.type === "work";
-            const badgeBg = isWork ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-sky-50 text-sky-700 border-sky-200";
+            const badgeBg = isWork ? "background-color: #fff1f2; color: #be123c; border: 1px solid #fecdd3;" : "background-color: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd;";
             innerHTML += `
               <div 
                 onclick="scrollToEvent('card-${ev.id}')"
-                class="mt-1 w-full text-[9px] sm:text-[10px] font-bold px-1 py-0.5 rounded-md ${badgeBg} border truncate cursor-pointer hover:opacity-80 transition-opacity" 
+                style="margin-top: 3px; width: 100%; font-size: 0.5625rem; font-weight: 700; padding: 1px 3px; border-radius: 4px; ${badgeBg}; cursor: pointer;" 
+                class="truncate"
                 title="${ev.title} (${ev.location})"
               >
                 ${ev.title}
@@ -712,32 +898,32 @@
         }
 
         cell.innerHTML = innerHTML;
-        grid.appendChild(cell);
+        fragment.appendChild(cell);
       }
 
-      // 3. 填補下個月開頭使其補滿 7 的倍數 (保持月曆高度整齊)
+      // 3. 下月開頭補滿
       const totalCells = firstDayOfWeek + daysInMonth;
       const nextDays = (7 - (totalCells % 7)) % 7;
       for (let day = 1; day <= nextDays; day++) {
         const cell = document.createElement("div");
         cell.className = "cal-cell p-1 rounded-xl bg-slate-50/50 text-slate-300 flex flex-col justify-start items-center";
-        cell.innerHTML = `<span class="text-[11px] font-medium">${day}</span>`;
-        grid.appendChild(cell);
+        cell.innerHTML = `<span style="font-size: 0.6875rem; font-weight: 500;">${day}</span>`;
+        fragment.appendChild(cell);
       }
 
-      lucide.createIcons();
+      grid.appendChild(fragment);
     }
 
     function scrollToEvent(cardId) {
       const elem = document.getElementById(cardId);
       if (elem) {
         elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        elem.classList.add("ring-2", "ring-blue-500");
-        setTimeout(() => elem.classList.remove("ring-2", "ring-blue-500"), 1500);
+        elem.style.boxShadow = "0 0 0 2px #2563eb";
+        setTimeout(() => { elem.style.boxShadow = ""; }, 1500);
       }
     }
 
-    // 設定行事曆左右滑動手勢 (支援 iOS 觸控滑動 & 電腦滑鼠拖曳)
+    // 設定行事曆左右滑動手勢
     function setupCalendarGestures() {
       const section = document.getElementById("calendarSection");
       if (!section || section.dataset.gestureBound) return;
@@ -747,7 +933,6 @@
       let startY = 0;
       let isSwiping = false;
 
-      // 手機觸控開始
       section.addEventListener("touchstart", (e) => {
         if (e.touches.length === 1) {
           startX = e.touches[0].clientX;
@@ -756,45 +941,32 @@
         }
       }, { passive: true });
 
-      // 手機觸控移動中
       section.addEventListener("touchmove", (e) => {
         if (!isSwiping || e.touches.length !== 1) return;
-        const currentX = e.touches[0].clientX;
-        const currentY = e.touches[0].clientY;
-        const diffX = currentX - startX;
-        const diffY = currentY - startY;
+        const diffX = e.touches[0].clientX - startX;
+        const diffY = e.touches[0].clientY - startY;
 
-        // 若垂直滑動幅度過大，判定使用者意圖為滾動頁面，取消換月手勢
         if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 25) {
           isSwiping = false;
         }
       }, { passive: true });
 
-      // 手機觸控結束
       section.addEventListener("touchend", (e) => {
         if (!isSwiping) return;
         isSwiping = false;
-        const endX = e.changedTouches[0].clientX;
-        const endY = e.changedTouches[0].clientY;
-        const diffX = endX - startX;
-        const diffY = endY - startY;
+        const diffX = e.changedTouches[0].clientX - startX;
+        const diffY = e.changedTouches[0].clientY - startY;
 
-        // 水平滑動超過 40px 且以水平移動為主
         if (Math.abs(diffX) >= 40 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
-          if (diffX < 0) {
-            nextMonth(); // 向左滑動 -> 下個月
-          } else {
-            prevMonth(); // 向右滑動 -> 上個月
-          }
+          if (diffX < 0) nextMonth();
+          else prevMonth();
         }
       }, { passive: true });
 
-      // 電腦滑鼠拖曳支援
       let mouseStartX = 0;
       let isMouseDown = false;
 
       section.addEventListener("mousedown", (e) => {
-        // 點擊按鈕時不觸發拖曳
         if (e.target.closest("button") || e.target.closest("a")) return;
         mouseStartX = e.clientX;
         isMouseDown = true;
@@ -805,27 +977,20 @@
         isMouseDown = false;
         const diffX = e.clientX - mouseStartX;
         if (Math.abs(diffX) >= 45) {
-          if (diffX < 0) {
-            nextMonth();
-          } else {
-            prevMonth();
-          }
+          if (diffX < 0) nextMonth();
+          else prevMonth();
         }
       });
 
-      section.addEventListener("mouseleave", () => {
-        isMouseDown = false;
-      });
+      section.addEventListener("mouseleave", () => { isMouseDown = false; });
     }
 
-    // ==================== 倒數清單渲染邏輯 ====================
+    // ==================== 倒數清單高效渲染 ====================
     function renderPortal() {
       const now = new Date();
+      cachedCountdownElements = {};
 
-      // 1. 排除已結束行程 (結束時間大於等於現在)
       const upcomingEvents = EVENTS_DATA.filter(e => new Date(e.endDate || e.startDate) >= now);
-
-      // 2. 依倒數天數依序排列 (由近至遠)
       upcomingEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
       const listContainer = document.getElementById("eventsList");
@@ -842,58 +1007,65 @@
         countBadge.textContent = `共 ${upcomingEvents.length} 筆待辦`;
       }
 
-      upcomingEvents.forEach((event, idx) => {
-        // 分類樣式（拍攝工作：粉色；旅行：淺藍色）
+      const fragment = document.createDocumentFragment();
+
+      upcomingEvents.forEach(event => {
         const categoryBadge = event.type === "work" 
-          ? `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/80"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>拍攝工作</span>`
-          : `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-600 border border-sky-200/80"><span class="w-1.5 h-1.5 rounded-full bg-sky-500 mr-1.5"></span>旅行</span>`;
+          ? `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/80"><span class="rounded-full mr-1.5" style="width: 0.375rem; height: 0.375rem; background-color: #f43f5e;"></span>拍攝工作</span>`
+          : `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-600 border border-sky-200/80"><span class="rounded-full mr-1.5" style="width: 0.375rem; height: 0.375rem; background-color: #0ea5e9;"></span>旅行</span>`;
 
         const card = document.createElement("div");
         card.id = `card-${event.id}`;
-        card.className = "white-card rounded-2xl p-5 transition-all";
+        card.className = "white-card rounded-2xl p-5";
         card.innerHTML = `
           <div class="flex items-start justify-between gap-4">
-            <!-- 左側行程詳情 -->
             <div class="flex-1 min-w-0">
-              <div class="flex flex-wrap items-center gap-2 mb-2">
+              <div class="flex items-center gap-2 mb-2" style="flex-wrap: wrap;">
                 ${categoryBadge}
                 <span class="text-xs font-medium text-slate-500">${event.dateString}</span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words">${event.title}</h3>
               <p class="text-xs text-slate-500 mt-1 flex items-center">
-                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
+                <svg style="width: 0.875rem; height: 0.875rem; color: #94a3b8; margin-right: 0.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="truncate">${event.location}</span>
               </p>
             </div>
 
-            <!-- 右側倒數計時與日曆按鈕 -->
             <div class="flex flex-col items-end flex-shrink-0">
               <div class="text-right">
-                <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">剩餘倒數</span>
+                <span class="text-xs font-medium text-slate-400 uppercase tracking-wider block" style="font-size: 0.6875rem;">剩餘倒數</span>
                 <span id="countdown-${event.id}" class="text-base font-extrabold font-mono text-slate-900 block mt-0.5">計算中...</span>
               </div>
               <a 
                 href="${event.calLink}" 
                 target="_blank" 
-                class="mt-2.5 inline-flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 px-2.5 py-1 rounded-lg transition-colors font-medium"
+                class="mt-2.5 inline-flex items-center space-x-1 text-xs text-blue-600 bg-blue-50/80 px-2.5 py-1 rounded-lg font-medium"
                 title="查看 Google 日曆活動"
               >
-                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                 <span>日曆</span>
               </a>
             </div>
           </div>
         `;
-        listContainer.appendChild(card);
+        fragment.appendChild(card);
       });
 
-      lucide.createIcons();
+      listContainer.appendChild(fragment);
+
+      // 快取 DOM 節點指標，每秒刷新不再重新查找
+      upcomingEvents.forEach(event => {
+        cachedCountdownElements[event.id] = document.getElementById(`countdown-${event.id}`);
+      });
+
+      updateCountdowns();
     }
 
-    // 每秒動態刷新倒數天/時/分/秒
+    // 每秒動態刷新倒數 (記憶體指標快取，0 負擔)
     function startTimers() {
+      if (timerInterval) clearInterval(timerInterval);
       updateCountdowns();
-      setInterval(updateCountdowns, 1000);
+      timerInterval = setInterval(updateCountdowns, 1000);
     }
 
     function updateCountdowns() {
@@ -904,21 +1076,25 @@
         timeElem.textContent = now.toLocaleDateString("zh-TW", { month: "numeric", day: "numeric", weekday: "short" }) + " " + now.toTimeString().substring(0, 8);
       }
 
-      EVENTS_DATA.forEach(event => {
-        const span = document.getElementById(`countdown-${event.id}`);
-        if (!span) return;
+      for (let i = 0; i < EVENTS_DATA.length; i++) {
+        const event = EVENTS_DATA[i];
+        const span = cachedCountdownElements[event.id];
+        if (!span) continue;
+
         const diff = new Date(event.startDate) - now;
         if (diff > 0) {
-          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-          const mins = Math.floor((diff / 1000 / 60) % 60);
+          const days = Math.floor(diff / 86400000);
+          const hours = Math.floor((diff / 3600000) % 24);
+          const mins = Math.floor((diff / 60000) % 60);
           const secs = Math.floor((diff / 1000) % 60);
-          span.innerHTML = `<span class="text-rose-600 text-lg">${days}</span><span class="text-xs text-slate-400 font-sans mx-0.5">天</span> <span class="text-sm font-semibold">${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}</span>`;
+
+          span.innerHTML = `<span style="color:#e11d48; font-size:1.125rem;">${days}</span><span style="font-size:0.75rem; color:#94a3b8; font-family:-apple-system,sans-serif; margin:0 2px;">天</span> <span style="font-size:0.875rem; font-weight:600;">${hours < 10 ? '0' + hours : hours}:${mins < 10 ? '0' + mins : mins}:${secs < 10 ? '0' + secs : secs}</span>`;
         } else {
           span.textContent = "進行中 / 今日";
-          span.className = "text-xs font-semibold text-emerald-600 block mt-0.5";
+          span.style.color = "#059669";
+          span.style.fontSize = "0.75rem";
         }
-      });
+      }
     }
   </script>
 </body>
