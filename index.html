@@ -259,6 +259,141 @@
     }
 
     svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
+    /* ==================== 詳細流程抽屜 (Rundown Bottom Sheet) 樣式 ==================== */
+    .rd-drawer {
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+      will-change: transform;
+    }
+    .rd-drawer.open {
+      transform: translateY(0%) !important;
+    }
+    .rd-overlay {
+      transition: opacity 0.25s ease;
+    }
+    
+    /* 流程時間軸 */
+    .rd-timeline {
+      position: relative;
+      padding-left: 1.5rem;
+    }
+    .rd-timeline::before {
+      content: "";
+      position: absolute;
+      left: 0.4375rem;
+      top: 0.5rem;
+      bottom: 0.5rem;
+      width: 2px;
+      background: #e2e8f0;
+    }
+    .rd-t-item {
+      position: relative;
+      margin-bottom: 0.875rem;
+    }
+    .rd-t-item:last-child {
+      margin-bottom: 0;
+    }
+    .rd-t-dot {
+      position: absolute;
+      left: -1.5rem;
+      top: 0.5rem;
+      width: 0.9375rem;
+      height: 0.9375rem;
+      border-radius: 9999px;
+      background: #ffffff;
+      border: 3px solid #0284c7;
+    }
+    .rd-t-dot.rose { border-color: #e11d48; background: #e11d48; }
+    .rd-t-dot.gold { border-color: #d97706; }
+    
+    .rd-t-card {
+      background: #ffffff;
+      border: 1px solid #f1f5f9;
+      border-radius: 0.875rem;
+      padding: 0.75rem 0.875rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .rd-t-card.highlight {
+      border-color: rgba(244, 63, 94, 0.35);
+      background: #fffafa;
+    }
+    
+    /* 高鐵車次盒 */
+    .rd-hsr-box {
+      background: #fff7ed;
+      border: 1px dashed #fb923c;
+      border-radius: 0.875rem;
+      padding: 0.75rem 0.875rem;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: #9a3412;
+    }
+
+    /* 車隊卡片 */
+    .rd-fleet-row {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+    }
+    .rd-fleet-row:last-child { border-bottom: none; }
+
+    /* 核對清單項目 */
+    .rd-c-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      padding: 0.625rem 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: #334155;
+      cursor: pointer;
+      user-select: none;
+    }
+    .rd-c-item:last-child { border-bottom: none; }
+    .rd-c-item.done {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+    .rd-c-box {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 0.375rem;
+      border: 2px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+      background: #ffffff;
+      transition: all 0.15s ease;
+    }
+    .rd-c-item.done .rd-c-box {
+      background: #059669;
+      border-color: #059669;
+    }
+    .rd-c-item.done .rd-c-box::after {
+      content: "✓";
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    /* 卡片可點擊指引 */
+    .card-has-rundown {
+      cursor: pointer;
+      border-color: #fbcfe8;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-has-rundown:hover {
+      border-color: #f43f5e;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -4px rgba(244, 63, 94, 0.12);
+    }
+    .card-has-rundown:active {
+      transform: scale(0.985);
+    }
   </style>
 </head>
 <body>
@@ -441,6 +576,35 @@
       <p>依倒數天數依序排列・每秒動態刷新</p>
     </footer>
 
+  </div>
+
+  <!-- ==================== 詳細流程抽屜視窗 (Apple 風格 Bottom Sheet) ==================== -->
+  <div id="rundownModal" class="hidden">
+    <!-- 背景毛玻璃遮罩 -->
+    <div id="rundownOverlay" class="fixed inset-0 z-50 rd-overlay opacity-0" style="background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);" onclick="closeRundownModal()"></div>
+
+    <!-- 底部抽屜本體 -->
+    <div id="rundownDrawer" class="fixed inset-x-0 bottom-0 z-50 max-w-xl mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col rd-drawer" style="max-height: 90vh; transform: translateY(100%);">
+      <!-- iOS 頂部拉桿與導航列 -->
+      <div class="px-5 pt-3 pb-3 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-md rounded-t-3xl z-10 flex-shrink-0">
+        <div class="flex flex-col flex-1 min-w-0 pr-3">
+          <!-- 頂部小拉桿 -->
+          <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-2 opacity-80"></div>
+          <div class="flex items-center gap-2">
+            <span id="rdTypeBadge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200"></span>
+            <h3 id="rdModalTitle" class="text-base font-bold text-slate-900 truncate"></h3>
+          </div>
+        </div>
+        <button onclick="closeRundownModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition flex-shrink-0" aria-label="關閉視窗">
+          <svg style="width: 1.125rem; height: 1.125rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <!-- 可捲動內容區 -->
+      <div id="rdModalBody" class="overflow-y-auto px-5 py-4 pb-safe space-y-4" style="-webkit-overflow-scrolling: touch;">
+        <!-- 動態渲染詳細內容 -->
+      </div>
+    </div>
   </div>
 
   <!-- ==================== JavaScript 高效核心邏輯 ==================== -->
@@ -1052,6 +1216,256 @@
       section.addEventListener("mouseleave", () => { isMouseDown = false; });
     }
 
+    // ==================== 活動詳細流程資料庫 (離線儲存、即時展開) ====================
+    const EVENT_RUNDOWNS = {
+      // 11/8 高雄婚禮 (11/7 中午搭高鐵去高雄)
+      "bgug42mmophmt0pcsdvbn2gq20": {
+        type: "wedding",
+        badge: "🌸 婚禮詳細流程",
+        theme: "rose",
+        title: "11/8 高雄美濃迎娶 ＆ 午宴流程",
+        subtitle: "🚄 11/7 (六) 中午搭高鐵出發前往高雄",
+        hsr: {
+          title: "🚄 高鐵去程票務速查",
+          train: "1225 車次（南港 12:40 - 左營 14:30）",
+          seat: "標準車廂 3 車 3A",
+          code: "01987334"
+        },
+        meta: [
+          { label: "新人", value: "👰 詹玉楨 ｜ 🤵 溫帛倫" },
+          { label: "雙方父母", value: "男方：溫增龍、李美鳳 ｜ 女方：詹順揚、邱莉芬" },
+          { label: "宴客地點", value: "阿海餐廳（高雄市美濃區新興街 2-5 號）" },
+          { label: "桌數禮服", value: "14 桌 ｜ 白紗 ＋ 龍鳳褂" }
+        ],
+        tags: ["總召：劉芳伶", "開門禮：劉宬鋼", "放鞭炮：劉彥岐哥", "伴郎伴娘 2 對"],
+        timeline: [
+          { time: "06:00", title: "女方開妝", desc: "06:00-09:00 新娘<br>06:30-07:30 伴娘 (鄧)<br>07:00-08:00 媽媽 (莉芬)<br>08:00-09:00 伴娘 (晴)" },
+          { time: "06:30", title: "男方開妝", desc: "06:30-07:30 媒人婆 ｜ 07:30-08:00 新郎<br>08:00-08:30 安 ｜ 08:30-09:30 媽媽 (美鳳) & 外婆" },
+          { time: "08:00", title: "攝影師前往男方家", desc: "<strong>郭伴郎與攝影師前往男方家</strong>開工拍攝", highlight: true, dot: "rose" },
+          { time: "09:00", title: "男方迎娶出發（6台車）", desc: "<strong>1車 (禮砲車)</strong>：大溫 / 砲手 小劉董、<strong>攝影師</strong><br><strong>2車 (新娘車)</strong>：安安 / 淑惠、新郎 (倫)", dot: "gold" },
+          { time: "09:30", title: "迎娶闖關 ＆ 拜別父母", desc: "女方家抵達 ➔ 闖關互動遊戲 ➔ 溫馨拜別岳父順揚、岳母莉芬 ➔ 蓋頭紗擲扇出閣", highlight: true, dot: "rose" },
+          { time: "10:20", title: "迎娶車隊返程", desc: "<strong>1車</strong>：大溫 / 小劉董、攝影師<br><strong>2車</strong>：安安 / 淑惠、新郎、新娘", dot: "gold" },
+          { time: "10:55", title: "開車門禮", desc: "抵達男方家，開門禮摸蘋果/橘子（開門：<strong>劉宬鋼</strong>）" },
+          { time: "11:00", title: "進新房", desc: "新人入新房、坐同心椅、掀頭紗、親友合照", highlight: true, dot: "rose" },
+          { time: "11:30", title: "男方餐廳放炮迎接親家", desc: "放鞭炮人員：<strong>劉彥岐哥</strong> ｜ 美濃阿海餐廳" },
+          { time: "11:30 - 12:20", title: "迎賓時間 ＆ 音樂暖場", desc: "播放新人 Spotify 背景曲、婚紗 MV 輪播、賓客入席" },
+          { time: "12:20 - 12:30", title: "入席提醒 ＆ 主持人開場", desc: "12:20 提醒賓客入席 ➔ 12:25 主持人開場、進場人員就位" },
+          { time: "12:30 - 12:40", title: "第一次進場（西式白紗）", desc: "播開場 MV ➔ 男方主婚人 ➔ 伴郎伴娘 ➔ 新郎+莉芬媽媽至中點 ➔ 新娘+順揚爸爸交手 ➔ 上舞台", highlight: true, dot: "rose" },
+          { time: "12:40 - 12:45", title: "交換婚戒", desc: "遞戒指人員：<strong>浩庭拿戒指</strong>", highlight: true, dot: "rose" },
+          { time: "12:45 - 12:50", title: "舉杯答謝 ＆ 服務生上菜", desc: "雙方主婚人上台共同舉杯（遞酒）➔ 宴會正式上菜" },
+          { time: "12:50 - 13:00", title: "新人主桌用餐", desc: "新人在主桌稍作休息用餐" },
+          { time: "13:00 - 13:30", title: "新娘更衣換造型", desc: "換穿第二套禮服（龍鳳褂）", dot: "gold" },
+          { time: "13:30 - 13:50", title: "第二次進場（龍鳳褂）", desc: "播成長 MV ➔ 新人二進：<strong>逐桌派代表猜拳互動</strong>", highlight: true, dot: "rose" },
+          { time: "13:50 - 14:00", title: "互動小活動：抽現金 💸", desc: "舞台抽現金小活動時間", highlight: true, dot: "rose" },
+          { time: "14:00 - 14:20", title: "逐桌敬酒（共 14 桌）", desc: "新人與雙方主婚人逐桌敬酒致意（播放 Spotify 背景曲）" },
+          { time: "14:20 - 15:00", title: "喜宴圓滿 ＆ 送客合照", desc: "新人至送客區就位，與全體親友合照留念", highlight: true, dot: "rose" }
+        ],
+        fleet: [
+          { car: "🚘 1 車（禮砲車）", driver: "大溫", pass: "砲手：小劉董、<strong>攝影師</strong>（去程 09:00 / 返程 10:20 同乘）" },
+          { car: "🚘 2 車（新娘車）", driver: "安安", pass: "去程乘員：淑惠、倫 (新郎)<br><strong>返程乘員：淑惠、新郎、新娘</strong>" },
+          { car: "🚘 3 車", driver: "承軒（安同學）", pass: "乘客：美秀（大姨）" },
+          { car: "🚘 4 車", driver: "宏宏", pass: "乘客：媒人婆" },
+          { car: "🚘 5 車", driver: "小吳", pass: "去程：郭伴郎（1人）<br><strong>返程：郭伴郎、伴娘(鄧)、伴郎女友</strong>" },
+          { car: "🚘 6 車", driver: "勵", pass: "去程：黃伴郎（1人）<br><strong>返程：黃伴郎、伴娘(徐)</strong>" }
+        ],
+        checklist: [
+          { id: "rd_chk_1", text: "<strong>08:00 攝影動線：</strong>郭伴郎＋攝影師前往男方家拍開妝花絮、迎娶出發（搭乘 1 車禮砲車）。" },
+          { id: "rd_chk_2", text: "<strong>09:30 女方家拜別儀式：</strong>闖關遊戲 ➔ 拜別岳父詹順揚、岳母邱莉芬 ➔ 擲扇上車。" },
+          { id: "rd_chk_3", text: "<strong>10:55 ~ 11:00 入新房流程：</strong>開車門：劉宬鋼 ➔ 入新房坐同心椅掀頭紗。" },
+          { id: "rd_chk_4", text: "<strong>11:30 餐廳迎接放炮：</strong>放鞭炮迎接親家：劉彥岐哥。" },
+          { id: "rd_chk_5", text: "<strong>12:30 一進交手特殊動線：</strong>新郎＋女方莉芬媽媽走至紅毯中點 ➔ 新娘＋順揚爸爸進場交手 ➔ 浩庭拿婚戒交換。" },
+          { id: "rd_chk_6", text: "<strong>13:30 二進活動：</strong>逐桌派代表猜拳進場 ➔ 抽現金活動。" }
+        ]
+      }
+    };
+
+    function getRundownForEvent(event) {
+      if (!event) return null;
+      if (EVENT_RUNDOWNS[event.id]) return EVENT_RUNDOWNS[event.id];
+      // 容錯檢查：透過日期或關鍵字關聯
+      const start = event.startDate || "";
+      const title = event.title || "";
+      if (start.includes("2026-11-07") || start.includes("2026-11-08") || title.includes("高雄") || title.includes("11/7")) {
+        return EVENT_RUNDOWNS["bgug42mmophmt0pcsdvbn2gq20"];
+      }
+      return null;
+    }
+
+    function openRundownModal(eventId) {
+      const event = EVENTS_DATA.find(e => e.id === eventId) || { id: eventId };
+      const rd = getRundownForEvent(event);
+      if (!rd) return;
+
+      const modal = document.getElementById("rundownModal");
+      const overlay = document.getElementById("rundownOverlay");
+      const drawer = document.getElementById("rundownDrawer");
+      const typeBadge = document.getElementById("rdTypeBadge");
+      const modalTitle = document.getElementById("rdModalTitle");
+      const modalBody = document.getElementById("rdModalBody");
+
+      typeBadge.textContent = rd.badge;
+      modalTitle.textContent = rd.title;
+
+      let html = "";
+
+      // 頂部大卡片
+      html += `
+        <div class="rounded-2xl p-4 sm:p-5" style="background: linear-gradient(135deg, #fff7ed 0%, #fff1f2 60%, #ffffff 100%); border: 1px solid #fecdd3;">
+          <h4 class="text-lg font-extrabold text-slate-900 tracking-tight mb-1">${rd.title}</h4>
+          <span class="inline-block text-xs font-bold text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-lg mb-3">${rd.subtitle}</span>
+      `;
+
+      // 高鐵速查盒
+      if (rd.hsr) {
+        html += `
+          <div class="rd-hsr-box mb-3">
+            <div class="font-bold text-amber-900 mb-1 flex items-center justify-between">
+              <span>${rd.hsr.title}</span>
+              <span class="text-xs bg-amber-200/80 px-2 py-0.5 rounded font-mono font-bold">代號 ${rd.hsr.code}</span>
+            </div>
+            <div class="text-xs text-amber-800 space-y-0.5">
+              <div>• ${rd.hsr.train}</div>
+              <div>• 座位：<strong>${rd.hsr.seat}</strong></div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Meta 資訊
+      if (rd.meta && rd.meta.length) {
+        html += `<div class="space-y-1 text-xs text-slate-600 mb-3 leading-relaxed">`;
+        rd.meta.forEach(m => {
+          html += `<div><span class="font-bold text-slate-700">${m.label}：</span>${m.value}</div>`;
+        });
+        html += `</div>`;
+      }
+
+      // 標籤群
+      if (rd.tags && rd.tags.length) {
+        html += `<div class="flex flex-wrap gap-1.5">`;
+        rd.tags.forEach(t => {
+          html += `<span class="text-xs px-2.5 py-1 rounded-lg bg-white/90 border border-slate-200 text-slate-600 font-medium">${t}</span>`;
+        });
+        html += `</div>`;
+      }
+      html += `</div>`;
+
+      // 一日總時間軸
+      if (rd.timeline && rd.timeline.length) {
+        html += `
+          <div>
+            <div class="flex items-center justify-between mb-3 pt-2">
+              <h5 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>⏱️</span> 一日總時間軸
+              </h5>
+              <span class="text-xs text-slate-400">時序排程</span>
+            </div>
+            <div class="rd-timeline">
+        `;
+        rd.timeline.forEach(item => {
+          const dotClass = item.dot === "rose" ? "rose" : item.dot === "gold" ? "gold" : "";
+          const cardClass = item.highlight ? "highlight" : "";
+          const timeColor = item.dot === "rose" ? "text-rose-600" : item.dot === "gold" ? "text-amber-600" : "text-sky-600";
+          html += `
+            <div class="rd-t-item">
+              <div class="rd-t-dot ${dotClass}"></div>
+              <div class="rd-t-card ${cardClass}">
+                <div class="flex items-baseline justify-between mb-1">
+                  <span class="text-xs sm:text-sm font-extrabold ${timeColor} font-mono">${item.time}</span>
+                  <span class="text-xs sm:text-sm font-bold text-slate-900">${item.title}</span>
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed">${item.desc}</div>
+              </div>
+            </div>
+          `;
+        });
+        html += `</div></div>`;
+      }
+
+      // 迎娶車隊表
+      if (rd.fleet && rd.fleet.length) {
+        html += `
+          <div>
+            <div class="flex items-center justify-between mb-2 pt-2">
+              <h5 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>🚗</span> 迎娶車隊配置表
+              </h5>
+              <span class="text-xs text-slate-400">去程 ➔ 返程</span>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-sm">
+        `;
+        rd.fleet.forEach(f => {
+          html += `
+            <div class="rd-fleet-row">
+              <div class="font-bold text-slate-900 mb-0.5">${f.car} ｜ 駕駛：${f.driver}</div>
+              <div class="text-slate-600 pl-1">${f.pass}</div>
+            </div>
+          `;
+        });
+        html += `</div></div>`;
+      }
+
+      // 現場重點核對 (可打勾互動)
+      if (rd.checklist && rd.checklist.length) {
+        html += `
+          <div>
+            <div class="flex items-center justify-between mb-2 pt-2">
+              <h5 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>🔍</span> 現場重點核對（可直接點擊打勾）
+              </h5>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-sm">
+        `;
+        rd.checklist.forEach(c => {
+          const isDone = localStorage.getItem(c.id) === "1";
+          html += `
+            <div class="rd-c-item ${isDone ? 'done' : ''}" onclick="toggleCheckItem(this, '${c.id}')">
+              <div class="rd-c-box"></div>
+              <div class="flex-1">${c.text}</div>
+            </div>
+          `;
+        });
+        html += `</div></div>`;
+      }
+
+      modalBody.innerHTML = html;
+
+      // 顯示視窗與啟動平滑上滑
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden"; // 防止背景滾動
+      requestAnimationFrame(() => {
+        overlay.classList.remove("opacity-0");
+        drawer.classList.add("open");
+      });
+    }
+
+    function closeRundownModal() {
+      const modal = document.getElementById("rundownModal");
+      const overlay = document.getElementById("rundownOverlay");
+      const drawer = document.getElementById("rundownDrawer");
+      if (!modal || modal.classList.contains("hidden")) return;
+
+      overlay.classList.add("opacity-0");
+      drawer.classList.remove("open");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }, 280);
+    }
+
+    function toggleCheckItem(el, key) {
+      el.classList.toggle("done");
+      const isDone = el.classList.contains("done");
+      try {
+        localStorage.setItem(key, isDone ? "1" : "0");
+      } catch (_) {}
+    }
+
+    // ESC 鍵關閉視窗
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeRundownModal();
+    });
+
     // ==================== 倒數清單高效渲染 ====================
     function renderPortal() {
       const now = new Date();
@@ -1081,21 +1495,42 @@
           ? `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/80"><span class="rounded-full mr-1.5" style="width: 0.375rem; height: 0.375rem; background-color: #f43f5e;"></span>拍攝工作</span>`
           : `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-600 border border-sky-200/80"><span class="rounded-full mr-1.5" style="width: 0.375rem; height: 0.375rem; background-color: #0ea5e9;"></span>旅行</span>`;
 
+        const rundown = getRundownForEvent(event);
+        const hasRundown = !!rundown;
+
+        const rundownBadge = hasRundown
+          ? `<span class="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200">📋 詳細流程</span>`
+          : "";
+
         const card = document.createElement("div");
         card.id = `card-${event.id}`;
-        card.className = "white-card rounded-2xl p-5";
+        card.className = `white-card rounded-2xl p-5 ${hasRundown ? 'card-has-rundown' : ''}`;
+        
+        if (hasRundown) {
+          card.onclick = (e) => {
+            // 如果點擊的是日曆外鏈，不打開抽屜
+            if (e.target.closest("a")) return;
+            openRundownModal(event.id);
+          };
+        }
+
         card.innerHTML = `
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-2" style="flex-wrap: wrap;">
                 ${categoryBadge}
+                ${rundownBadge}
                 <span class="text-xs font-medium text-slate-500">${event.dateString}</span>
               </div>
-              <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words">${event.title}</h3>
+              <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words flex items-center gap-1.5">
+                <span>${event.title}</span>
+                ${hasRundown ? `<span class="text-xs text-rose-500 font-semibold" style="font-size: 0.75rem;">➔</span>` : ""}
+              </h3>
               <p class="text-xs text-slate-500 mt-1 flex items-center">
                 <svg style="width: 0.875rem; height: 0.875rem; color: #94a3b8; margin-right: 0.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="truncate">${event.location}</span>
               </p>
+              ${hasRundown ? `<p class="text-xs text-rose-500 mt-2 font-medium flex items-center gap-1"><span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>點擊卡片查看完整高鐵、車隊與當日時程</p>` : ""}
             </div>
 
             <div class="flex flex-col items-end flex-shrink-0">
@@ -1108,6 +1543,7 @@
                 target="_blank" 
                 class="mt-2.5 inline-flex items-center space-x-1 text-xs text-blue-600 bg-blue-50/80 px-2.5 py-1 rounded-lg font-medium"
                 title="查看 Google 日曆活動"
+                onclick="event.stopPropagation();"
               >
                 <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                 <span>日曆</span>
