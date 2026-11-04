@@ -667,18 +667,37 @@
     <!-- 底部抽屜本體 -->
     <div id="rundownDrawer" class="rd-drawer">
       <!-- iOS 頂部拉桿與導航列 -->
-      <div style="padding: 0.875rem 1.25rem 0.75rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; position: sticky; top: 0; z-index: 10; flex-shrink: 0;">
+      <div style="padding: 0.75rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; position: sticky; top: 0; z-index: 10; flex-shrink: 0;">
         <div style="display: flex; flex-direction: column; flex: 1 1 0%; min-width: 0; padding-right: 0.75rem;">
           <!-- 頂部小拉桿 -->
           <div style="width: 2.5rem; height: 0.25rem; background-color: #cbd5e1; border-radius: 9999px; margin: 0 auto 0.5rem auto; opacity: 0.8;"></div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span id="rdTypeBadge" style="font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.625rem; border-radius: 9999px; background-color: #18181b; color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.45); white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></span>
-            <h3 id="rdModalTitle" style="font-size: 1rem; font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></h3>
+            <h3 id="rdModalTitle" style="font-size: 0.95rem; font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></h3>
           </div>
         </div>
-        <button onclick="closeRundownModal()" style="width: 2.25rem; height: 2.25rem; border-radius: 9999px; background-color: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0;" aria-label="關閉視窗">
-          <svg style="width: 1.125rem; height: 1.125rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+          <!-- 一鍵分享按鈕 -->
+          <button 
+            id="rdShareBtn" 
+            onclick="shareCurrentRundown(this)" 
+            style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; border-radius: 9999px; background-color: #0f172a; color: #ffffff; font-size: 0.75rem; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15); transition: transform 0.15s ease, opacity 0.15s ease;" 
+            onmousedown="this.style.transform='scale(0.96)'" 
+            onmouseup="this.style.transform='scale(1)'"
+            aria-label="一鍵分享流程"
+          >
+            <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+            <span>一鍵分享</span>
+          </button>
+          <!-- 關閉按鈕 -->
+          <button onclick="closeRundownModal()" style="width: 2.25rem; height: 2.25rem; border-radius: 9999px; background-color: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0;" aria-label="關閉視窗">
+            <svg style="width: 1.125rem; height: 1.125rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
       </div>
 
       <!-- 可捲動內容區 -->
@@ -686,6 +705,12 @@
         <!-- 動態渲染詳細內容 -->
       </div>
     </div>
+  </div>
+
+  <!-- 一鍵分享 Toast 提示 -->
+  <div id="shareToast" style="position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%) translateY(-40px); background: #0f172a; color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 9999px; font-size: 0.8125rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 2100; display: flex; align-items: center; gap: 0.5rem;">
+    <svg style="width: 1rem; height: 1rem; color: #34d399;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="shareToastText">已複製完整流程與連結 ✓</span>
   </div>
 
   <!-- ==================== JavaScript 高效核心邏輯 ==================== -->
@@ -932,7 +957,18 @@
       setupCalendarGestures();
       startTimers();
       fetchLiveCalendarEvents();
+      checkHashDeepLink();
     }
+
+    function checkHashDeepLink() {
+      if (window.location.hash && window.location.hash.startsWith("#event-")) {
+        const targetId = window.location.hash.replace("#event-", "");
+        setTimeout(() => {
+          openRundownModal(targetId);
+        }, 350);
+      }
+    }
+    window.addEventListener("hashchange", checkHashDeepLink);
 
     function lockPortal() {
       localStorage.removeItem(STORAGE_KEY);
@@ -1370,6 +1406,46 @@
           { id: "rd_chk_5", text: "<strong>12:30 一進交手特殊動線：</strong>新郎＋女方莉芬媽媽走至紅毯中點 ➔ 新娘＋順揚爸爸進場交手 ➔ 浩庭拿婚戒交換。" },
           { id: "rd_chk_6", text: "<strong>13:30 二進活動：</strong>逐桌派代表猜拳進場 ➔ 抽現金活動。" }
         ]
+      },
+
+      // 11/29 台北婚禮（晚宴證婚 + 晚宴流程）
+      "oojkhdud9v7h6fdtqovf3kqvok": {
+        type: "wedding",
+        badge: "🌸 婚禮詳細流程",
+        theme: "rose",
+        title: "11/29 台北訂婚儀式+證婚+晚宴",
+        subtitle: "🥂 王萬理 ＆ 陳奕淳 ｜ 維多麗亞酒店 1F 大宴會廳 (25+1 桌)",
+        meta: [
+          { label: "新人", value: "👰 陳奕淳 (淳) ｜ 🤵 王萬理 (萬理)" },
+          { label: "總召", value: "鄭承昌 ｜ 儐相：伴郎伴娘 2 對" },
+          { label: "婚企主持", value: "成家婚顧 Eileen" },
+          { label: "攝影團隊", value: "📷 Mr.Q photography" },
+          { label: "新秘造型", value: "艾絲緹 - Samina" },
+          { label: "禮服西服", value: "曼哈頓婚紗 ｜ G2000 西服" },
+          { label: "互動設備", value: "時尚刻印（拍貼機 ＆ 留聲機）" },
+          { label: "宴客地點", value: "維多麗亞酒店 1 樓大宴會廳（台北市中山區敬業四路168號）" }
+        ],
+        tags: ["成家婚禮顧問", "16:30 彩排", "17:00 證婚儀式", "18:00 晚宴一進", "19:05 二進發餅乾抽捧花Kahoot", "20:35 送客"],
+        timeline: [
+          { time: "16:30", title: "現場彩排（晚宴彩排 ＆ 證婚彩排）", desc: "自備筆電交至音控室。晚宴進場動線走位彩排、證婚儀式彩排，雙方主婚人與伴郎伴娘就位配合彩排。", dot: "gold" },
+          { time: "17:00", title: "戶外花園證婚儀式", desc: "<strong>1. 伴郎伴娘進場</strong><br><strong>2. 主婚人進場</strong><br><strong>3. 新人進場</strong>（新郎手拿捧花迎娶新娘）<br><strong>4. 交換誓詞</strong>（健維遞誓詞卡與麥克風）<br><strong>5. 交換婚戒</strong>（謙妘遞婚戒）<br><strong>6. 禮成親吻</strong><br><strong>7. 證婚親友大合照</strong>（依合照順序迅速拍攝）", highlight: true, dot: "rose" },
+          { time: "17:30", title: "迎賓時間 ＆ 互動體驗", desc: "新娘更換造型頭飾配件、男方媽媽換禮服。<br>賓客簽到入席，現場體驗拍貼機拍照與留聲機錄製新人祝福。" },
+          { time: "18:00", title: "晚宴第一次進場（開四次門）", desc: "<strong>第 1 次開門：</strong>伴郎伴娘進場<br><strong>第 2 次開門：</strong>男方主婚人進場<br><strong>第 3 次開門：</strong>新郎 ＋ 新娘媽媽進場至紅毯中央<br><strong>第 4 次開門：</strong>新娘拿捧花 ＋ 女方爸爸進場 ➔ 會合擁抱交手<br>新人上舞台 ➔ 倒香檳塔 ➔ 主婚人致詞 ➔ 全體舉杯開席", highlight: true, dot: "rose" },
+          { time: "18:35", title: "二進換裝（綠色禮服）", desc: "新娘換穿第二套綠色禮服，新郎換灰色西服（預估 25 分鐘 ＋ 5 分鐘緩衝時間）。", dot: "gold" },
+          { time: "19:05", title: "第二次進場 ＆ 舞台互動", desc: "<strong>1. 二進發餅乾：</strong>共 125 份，新人一人一籃發送。<br><strong>2. 抽捧花活動：</strong>6 位好友上台抽捧花，致贈客製化貼心禮物。<br><strong>3. Kahoot 互動遊戲：</strong>共 10 題互動問答，新郎弟弟為詮操作筆電，優勝者贈送專屬馬克杯！", highlight: true, dot: "rose" },
+          { time: "19:35", title: "逐桌敬酒（共 25+1 桌）", desc: "準備葡萄汁 6 杯（備用茶水偽裝威士忌），新人與雙方主婚人逐桌敬酒致意，多和親朋好友互動拍照。" },
+          { time: "20:05", title: "三進換裝（紫色禮服）", desc: "新娘換穿第三套送客紫色禮服（預估 25 分鐘 ＋ 5 分鐘緩衝時間）。", dot: "gold" },
+          { time: "20:35", title: "喜宴圓滿 ＆ 送客合照", desc: "喜糖籃 ＋ 喜糖就位，主持人送客詞後新人送客合照，預留 15 分鐘整理撤場與點收器材。", highlight: true, dot: "rose" }
+        ],
+        checklist: [
+          { id: "rd_29_chk_1", text: "<strong>16:30 彩排確認：</strong>自備筆電交音控室，完成晚宴走位與戶外證婚儀式走位彩排。" },
+          { id: "rd_29_chk_2", text: "<strong>17:00 證婚重要物品：</strong>誓詞卡與麥克風（健維遞）、婚戒（謙妘遞）。" },
+          { id: "rd_29_chk_3", text: "<strong>17:25 證婚合照順序：</strong>工作人員 ➔ 男方親友 ➔ 男方家人 ➔ 雙方父母 ➔ 女方家人 ➔ 女方親友 ➔ 儐相朋友。" },
+          { id: "rd_29_chk_4", text: "<strong>18:00 一進開門順序：</strong>伴郎伴娘 ➔ 男方主婚人 ➔ 新郎+新娘媽至中點 ➔ 新娘+女方爸進場交手 ➔ 倒香檳塔。" },
+          { id: "rd_29_chk_5", text: "<strong>19:05 二進道具確認：</strong>喜餅乾 125 份一人一籃、抽捧花 6 人客製禮、Kahoot 筆電操作（弟弟為詮）與馬克杯。" },
+          { id: "rd_29_chk_6", text: "<strong>19:35 敬酒杯準備：</strong>葡萄汁 6 杯（備用茶裝威士忌杯）。" },
+          { id: "rd_29_chk_7", text: "<strong>20:35 送客定位：</strong>喜糖籃、拍照背板區就位，全體親友合照留念。" }
+        ]
       }
     };
 
@@ -1379,8 +1455,11 @@
       // 容錯檢查：透過日期或關鍵字關聯
       const start = event.startDate || "";
       const title = event.title || "";
-      if (start.includes("2026-11-07") || start.includes("2026-11-08") || title.includes("高雄") || title.includes("11/7")) {
+      if (start.includes("2026-11-07") || start.includes("2026-11-08") || title.includes("高雄") || title.includes("11/7") || title.includes("美濃") || title.includes("詹玉楨")) {
         return EVENT_RUNDOWNS["bgug42mmophmt0pcsdvbn2gq20"];
+      }
+      if (start.includes("2026-11-29") || title.includes("11/29") || title.includes("王萬理") || title.includes("陳奕淳") || title.includes("維多麗亞")) {
+        return EVENT_RUNDOWNS["oojkhdud9v7h6fdtqovf3kqvok"];
       }
       return null;
     }
@@ -1438,6 +1517,103 @@
       }, 1500);
     }
 
+    // 當前開啟的詳細流程與活動 ID
+    let currentOpenRundown = null;
+    let currentOpenEventId = null;
+
+    // 顯示 iOS 風格 Toast 提示
+    let toastTimer = null;
+    function showShareToast(message) {
+      const toast = document.getElementById("shareToast");
+      const toastText = document.getElementById("shareToastText");
+      if (!toast || !toastText) return;
+      toastText.textContent = message;
+      toast.style.opacity = "1";
+      toast.style.transform = "translateX(-50%) translateY(0px)";
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%) translateY(-40px)";
+      }, 2500);
+    }
+
+    // 一鍵分享核心函數 (優先呼叫 iOS / 原生分享面板，不支援時直接複製完整文字與連結)
+    async function shareCurrentRundown(btnElem) {
+      if (!currentOpenRundown) return;
+      const rd = currentOpenRundown;
+      const baseUrl = window.location.href.split('#')[0];
+      const shareUrl = `${baseUrl}#event-${currentOpenEventId}`;
+
+      let shareText = `【${rd.title}】\n`;
+      if (rd.subtitle) shareText += `${rd.subtitle}\n\n`;
+      
+      if (rd.meta && rd.meta.length) {
+        shareText += `📋 【基本資訊】\n`;
+        rd.meta.forEach(m => {
+          shareText += `• ${m.label}：${m.value}\n`;
+        });
+        shareText += `\n`;
+      }
+
+      if (rd.timeline && rd.timeline.length) {
+        shareText += `⏱️ 【當日流程時序】\n`;
+        rd.timeline.forEach(t => {
+          const plainDesc = t.desc.replace(/<br\s*[\/]?>/gi, "； ").replace(/<[^>]+>/g, "").trim();
+          shareText += `[${t.time}] ${t.title}：${plainDesc}\n`;
+        });
+        shareText += `\n`;
+      }
+
+      if (rd.checklist && rd.checklist.length) {
+        shareText += `🔍 【重點核對事項】\n`;
+        rd.checklist.forEach(c => {
+          const plainCheck = c.text.replace(/<[^>]+>/g, "").trim();
+          shareText += `• ${plainCheck}\n`;
+        });
+        shareText += `\n`;
+      }
+
+      shareText += `🔗 點此查看線上倒數與完整流程：\n${shareUrl}`;
+
+      // 優先使用 Web Share API (iOS / Android 原生分享面板)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: rd.title,
+            text: shareText,
+            url: shareUrl
+          });
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return; // 使用者主動取消不彈錯
+        }
+      }
+
+      // 降級方案：複製至剪貼簿
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(shareText);
+          showShareToast("已複製完整流程與連結 ✓ 可直接貼至 LINE！");
+          return;
+        } catch (_) {}
+      }
+
+      // 舊版瀏覽器備用複製
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = shareText;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showShareToast("已複製完整流程與連結 ✓ 可直接貼至 LINE！");
+      } catch (_) {
+        alert("流程內容：\n\n" + shareText);
+      }
+    }
+
     // 抽屜手勢下拉關閉 (Swipe down to dismiss)
     let isGestureBound = false;
     function setupDrawerGesture() {
@@ -1473,7 +1649,7 @@
         if (diffY > 80) {
           closeRundownModal();
         } else {
-          drawer.style.transform = "translateY(0%)";
+          drawer.style.transform = "";
         }
       }, { passive: true });
     }
@@ -1495,6 +1671,9 @@
       const event = EVENTS_DATA.find(e => e.id === eventId) || { id: eventId };
       const rd = getRundownForEvent(event);
       if (!rd) return;
+
+      currentOpenRundown = rd;
+      currentOpenEventId = event.id || eventId;
 
       const modal = document.getElementById("rundownModal");
       const overlay = document.getElementById("rundownOverlay");
@@ -1665,9 +1844,11 @@
       modal.classList.remove("hidden");
       document.body.style.overflow = "hidden"; // 防止背景滾動
 
-      // 強制 Reflow 確保 Safari 渲染初始位置後再進行動畫過渡
+      // 重置抽屜位置與捲軸
       drawer.style.transform = "";
-      void drawer.offsetHeight;
+      drawer.style.transition = "";
+      if (modalBody) modalBody.scrollTop = 0;
+      void drawer.offsetHeight; // 強制 Reflow
 
       requestAnimationFrame(() => {
         overlay.classList.add("open");
@@ -1688,6 +1869,14 @@
         modal.classList.add("hidden");
         document.body.style.overflow = "";
         drawer.style.transform = "";
+        drawer.style.transition = "";
+        currentOpenRundown = null;
+        currentOpenEventId = null;
+        if (window.location.hash.startsWith("#event-")) {
+          try {
+            history.replaceState(null, null, window.location.pathname);
+          } catch (_) {}
+        }
       }, 300);
     }
 
