@@ -428,6 +428,44 @@
     .card-has-rundown:active {
       transform: scale(0.985);
     }
+
+    /* 分類篩選膠囊按鈕 */
+    .filter-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.375rem 0.875rem;
+      border-radius: 9999px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .filter-pill:hover {
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .filter-pill.active {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+    }
+
+    /* 卡片聚焦呼吸動畫 */
+    @keyframes cardFocusPulse {
+      0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 0 6px rgba(225, 29, 72, 0.25); transform: scale(1.015); border-color: #f43f5e; }
+      100% { box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05); transform: scale(1); }
+    }
+    .card-focused {
+      animation: cardFocusPulse 1.2s ease-out;
+    }
+
+    /* 隱藏滾動條但保持滾動 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body>
@@ -588,6 +626,13 @@
         <div class="flex items-center justify-between mb-3 px-1">
           <h2 class="text-base font-bold text-slate-900 tracking-tight">行程倒數清單</h2>
           <span id="eventCountBadge" class="text-xs text-slate-400 font-medium"></span>
+        </div>
+
+        <!-- 分類切換膠囊 (全部 / 拍攝工作 / 登山旅行) -->
+        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
+          <button id="filter-all" onclick="setCategoryFilter('all')" class="filter-pill active">全部</button>
+          <button id="filter-work" onclick="setCategoryFilter('work')" class="filter-pill">🌸 拍攝工作</button>
+          <button id="filter-travel" onclick="setCategoryFilter('travel')" class="filter-pill">🩵 登山旅行</button>
         </div>
 
         <div id="eventsList" class="space-y-4">
@@ -817,6 +862,9 @@
       checkAuth();
       setupPinInput();
       setupLifecycleHandlers();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
     });
 
     function checkAuth() {
@@ -1180,12 +1228,19 @@
     }
 
     function scrollToEvent(cardId) {
-      const elem = document.getElementById(cardId);
-      if (elem) {
-        elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        elem.style.boxShadow = "0 0 0 2px #2563eb";
-        setTimeout(() => { elem.style.boxShadow = ""; }, 1500);
+      if (currentFilter !== "all") {
+        setCategoryFilter("all");
       }
+      setTimeout(() => {
+        const elem = document.getElementById(cardId);
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          elem.classList.remove("card-focused");
+          void elem.offsetWidth;
+          elem.classList.add("card-focused");
+          setTimeout(() => { elem.classList.remove("card-focused"); }, 1400);
+        }
+      }, 50);
     }
 
     // 設定行事曆左右滑動手勢
@@ -1325,7 +1380,113 @@
       return null;
     }
 
+    // 分類篩選狀態管理 (全部 / 拍攝工作 / 登山旅行)
+    let currentFilter = "all";
+
+    function setCategoryFilter(filter) {
+      currentFilter = filter;
+      ["all", "work", "travel"].forEach(f => {
+        const btn = document.getElementById(`filter-${f}`);
+        if (btn) {
+          if (f === filter) btn.classList.add("active");
+          else btn.classList.remove("active");
+        }
+      });
+      renderPortal();
+    }
+
+    // 複製文字至剪貼簿
+    function copyToClipboard(text, btnElem) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showCopySuccess(btnElem);
+        }).catch(() => {
+          fallbackCopy(text, btnElem);
+        });
+      } else {
+        fallbackCopy(text, btnElem);
+      }
+    }
+
+    function fallbackCopy(text, btnElem) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showCopySuccess(btnElem);
+      } catch (_) {}
+      document.body.removeChild(ta);
+    }
+
+    function showCopySuccess(btnElem) {
+      if (!btnElem) return;
+      const originalText = btnElem.innerHTML;
+      btnElem.innerHTML = `已複製 ✓`;
+      btnElem.style.backgroundColor = "#dcfce7";
+      btnElem.style.color = "#15803d";
+      setTimeout(() => {
+        btnElem.innerHTML = originalText;
+        btnElem.style.backgroundColor = "";
+        btnElem.style.color = "";
+      }, 1500);
+    }
+
+    // 抽屜手勢下拉關閉 (Swipe down to dismiss)
+    let isGestureBound = false;
+    function setupDrawerGesture() {
+      if (isGestureBound) return;
+      isGestureBound = true;
+      const drawer = document.getElementById("rundownDrawer");
+      let startY = 0;
+      let currentY = 0;
+      let isDragging = false;
+
+      drawer.addEventListener("touchstart", (e) => {
+        const body = document.getElementById("rdModalBody");
+        if (body && body.scrollTop > 5) return;
+        startY = e.touches[0].clientY;
+        isDragging = true;
+      }, { passive: true });
+
+      drawer.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        currentY = e.touches[0].clientY;
+        const diffY = currentY - startY;
+        if (diffY > 0) {
+          drawer.style.transition = "none";
+          drawer.style.transform = `translateY(${diffY}px)`;
+        }
+      }, { passive: true });
+
+      drawer.addEventListener("touchend", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        drawer.style.transition = "transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)";
+        const diffY = currentY - startY;
+        if (diffY > 80) {
+          closeRundownModal();
+        } else {
+          drawer.style.transform = "translateY(0%)";
+        }
+      }, { passive: true });
+    }
+
+    // 更新核對清單進度條
+    function updateCheckProgress() {
+      const items = document.querySelectorAll(".rd-c-item");
+      if (items.length === 0) return;
+      const doneItems = document.querySelectorAll(".rd-c-item.done");
+      const percent = Math.round((doneItems.length / items.length) * 100);
+      const textElem = document.getElementById("rdProgressText");
+      const barElem = document.getElementById("rdProgressBar");
+      if (textElem) textElem.textContent = `已核對 ${doneItems.length} / ${items.length} 項 (${percent}%)`;
+      if (barElem) barElem.style.width = `${percent}%`;
+    }
+
     function openRundownModal(eventId) {
+      setupDrawerGesture();
       const event = EVENTS_DATA.find(e => e.id === eventId) || { id: eventId };
       const rd = getRundownForEvent(event);
       if (!rd) return;
@@ -1349,13 +1510,21 @@
           <span class="inline-block text-xs font-bold text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-lg mb-3">${rd.subtitle}</span>
       `;
 
-      // 高鐵速查盒
+      // 高鐵速查盒 (支援一鍵點擊複製訂位代號)
       if (rd.hsr) {
         html += `
           <div class="rd-hsr-box mb-3">
             <div class="font-bold text-amber-900 mb-1 flex items-center justify-between">
               <span>${rd.hsr.title}</span>
-              <span class="text-xs bg-amber-200/80 px-2 py-0.5 rounded font-mono font-bold">代號 ${rd.hsr.code}</span>
+              <button 
+                type="button" 
+                onclick="copyToClipboard('${rd.hsr.code}', this)" 
+                class="text-xs bg-amber-200/90 hover:bg-amber-300 active:scale-95 text-amber-900 px-2.5 py-1 rounded-md font-mono font-bold transition flex items-center gap-1 border border-amber-300"
+                title="點擊複製訂位代號"
+              >
+                <span>代號 ${rd.hsr.code}</span>
+                <span style="font-size: 0.7rem;">📋</span>
+              </button>
             </div>
             <div class="text-xs text-amber-800 space-y-0.5">
               <div>• ${rd.hsr.train}</div>
@@ -1365,11 +1534,29 @@
         `;
       }
 
-      // Meta 資訊
+      // Meta 資訊 (支援地點一鍵開啟地圖導航)
       if (rd.meta && rd.meta.length) {
-        html += `<div class="space-y-1 text-xs text-slate-600 mb-3 leading-relaxed">`;
+        html += `<div class="space-y-1.5 text-xs text-slate-600 mb-3 leading-relaxed">`;
         rd.meta.forEach(m => {
-          html += `<div><span class="font-bold text-slate-700">${m.label}：</span>${m.value}</div>`;
+          if (m.label.includes("地點")) {
+            const mapQuery = encodeURIComponent(m.value.replace("阿海餐廳", "阿海餐廳 "));
+            html += `
+              <div class="flex items-center justify-between flex-wrap gap-1">
+                <div><span class="font-bold text-slate-700">${m.label}：</span>${m.value}</div>
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md font-medium"
+                >
+                  <svg style="width: 0.75rem; height: 0.75rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>地圖導航</span>
+                </a>
+              </div>
+            `;
+          } else {
+            html += `<div><span class="font-bold text-slate-700">${m.label}：</span>${m.value}</div>`;
+          }
         });
         html += `</div>`;
       }
@@ -1439,14 +1626,19 @@
         html += `</div></div>`;
       }
 
-      // 現場重點核對 (可打勾互動)
+      // 現場重點核對 (含進度條與打勾儲存)
       if (rd.checklist && rd.checklist.length) {
         html += `
           <div>
             <div class="flex items-center justify-between mb-2 pt-2">
               <h5 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <span>🔍</span> 現場重點核對（可直接點擊打勾）
+                <span>🔍</span> 現場重點核對
               </h5>
+              <span id="rdProgressText" class="text-xs font-bold text-emerald-600"></span>
+            </div>
+            <!-- 進度條 -->
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2.5 overflow-hidden">
+              <div id="rdProgressBar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%;"></div>
             </div>
             <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-sm">
         `;
@@ -1469,11 +1661,13 @@
       document.body.style.overflow = "hidden"; // 防止背景滾動
 
       // 強制 Reflow 確保 Safari 渲染初始位置後再進行動畫過渡
+      drawer.style.transform = "";
       void drawer.offsetHeight;
 
       requestAnimationFrame(() => {
         overlay.classList.add("open");
         drawer.classList.add("open");
+        updateCheckProgress();
       });
     }
 
@@ -1488,6 +1682,7 @@
       setTimeout(() => {
         modal.classList.add("hidden");
         document.body.style.overflow = "";
+        drawer.style.transform = "";
       }, 300);
     }
 
@@ -1497,6 +1692,7 @@
       try {
         localStorage.setItem(key, isDone ? "1" : "0");
       } catch (_) {}
+      updateCheckProgress();
     }
 
     // ESC 鍵關閉視窗
@@ -1504,7 +1700,7 @@
       if (e.key === "Escape") closeRundownModal();
     });
 
-    // ==================== 倒數清單高效渲染 ====================
+    // ==================== 倒數清單高效渲染 (支援分類切換與最近一場焦點) ====================
     function renderPortal() {
       const now = new Date();
       cachedCountdownElements = {};
@@ -1512,23 +1708,44 @@
       const upcomingEvents = EVENTS_DATA.filter(e => new Date(e.endDate || e.startDate) >= now);
       upcomingEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
+      // 統計分類數量並更新膠囊按鈕文字
+      const totalCount = upcomingEvents.length;
+      const workCount = upcomingEvents.filter(e => e.type === "work").length;
+      const travelCount = upcomingEvents.filter(e => e.type === "travel").length;
+
+      const fAll = document.getElementById("filter-all");
+      const fWork = document.getElementById("filter-work");
+      const fTravel = document.getElementById("filter-travel");
+      if (fAll) fAll.textContent = `全部 (${totalCount})`;
+      if (fWork) fWork.textContent = `🌸 拍攝工作 (${workCount})`;
+      if (fTravel) fTravel.textContent = `🩵 登山旅行 (${travelCount})`;
+
+      // 根據 currentFilter 篩選顯示清單
+      let displayEvents = upcomingEvents;
+      if (currentFilter === "work") {
+        displayEvents = upcomingEvents.filter(e => e.type === "work");
+      } else if (currentFilter === "travel") {
+        displayEvents = upcomingEvents.filter(e => e.type === "travel");
+      }
+
       const listContainer = document.getElementById("eventsList");
       const emptyState = document.getElementById("emptyState");
       const countBadge = document.getElementById("eventCountBadge");
       listContainer.innerHTML = "";
 
-      if (upcomingEvents.length === 0) {
+      if (displayEvents.length === 0) {
         emptyState.classList.remove("hidden");
         countBadge.textContent = "0 筆";
         return;
       } else {
         emptyState.classList.add("hidden");
-        countBadge.textContent = `共 ${upcomingEvents.length} 筆待辦`;
+        countBadge.textContent = `共 ${displayEvents.length} 筆待辦`;
       }
 
       const fragment = document.createDocumentFragment();
 
-      upcomingEvents.forEach(event => {
+      displayEvents.forEach((event, index) => {
+        const isNextImmediate = (index === 0 && currentFilter === "all");
         const categoryBadge = event.type === "work" 
           ? `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/80"><span class="rounded-full mr-1.5" style="width: 0.375rem; height: 0.375rem; background-color: #f43f5e;"></span>拍攝工作</span>`
           : `<span class="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-600 border border-sky-200/80"><span class="rounded-full mr-1.5" style="width: 0.375rem; height: 0.375rem; background-color: #0ea5e9;"></span>旅行</span>`;
@@ -1540,9 +1757,14 @@
           ? `<span class="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200">📋 詳細流程</span>`
           : "";
 
+        const spotlightBadge = isNextImmediate
+          ? `<span class="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/90 shadow-xs">⭐ 最近一場</span>`
+          : "";
+
         const card = document.createElement("div");
         card.id = `card-${event.id}`;
-        card.className = `white-card rounded-2xl p-5 ${hasRundown ? 'card-has-rundown' : ''}`;
+        const cardBorderClass = isNextImmediate ? "border-amber-300 shadow-md ring-1 ring-amber-200/60" : "";
+        card.className = `white-card rounded-2xl p-5 ${cardBorderClass} ${hasRundown ? 'card-has-rundown' : ''}`;
         
         if (hasRundown) {
           card.onclick = (e) => {
@@ -1556,6 +1778,7 @@
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-2" style="flex-wrap: wrap;">
+                ${spotlightBadge}
                 ${categoryBadge}
                 ${rundownBadge}
                 <span class="text-xs font-medium text-slate-500">${event.dateString}</span>
@@ -1606,7 +1829,7 @@
       listContainer.appendChild(fragment);
 
       // 快取 DOM 節點指標，每秒刷新不再重新查找
-      upcomingEvents.forEach(event => {
+      displayEvents.forEach(event => {
         cachedCountdownElements[event.id] = document.getElementById(`countdown-${event.id}`);
       });
 
