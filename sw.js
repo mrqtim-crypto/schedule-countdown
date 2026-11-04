@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mrq-schedule-v6';
+const CACHE_NAME = 'mrq-schedule-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -34,23 +34,40 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Stale-While-Revalidate: 先取快取毫秒秒開，背景檢查網路更新
+// 智慧快取策略：HTML 頁面「Network First（網路優先）」，確保每次點開 App 都能拿到最新版！
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   
-  // 若為 Google Apps Script API，走網路優先
+  // Google Apps Script API 放行直接連線
   if (event.request.url.includes('script.google.com')) {
     return;
   }
 
+  const isHtml = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
+
+  if (isHtml) {
+    // 網路優先：只要有連網，一律向伺服器拿最新 HTML，斷網離線時才用本機快取
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request) || caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // 靜態圖示資源：先用快取秒開，背景檢查更新
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return networkResponse;
       }).catch(() => cachedResponse);
