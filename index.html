@@ -1560,15 +1560,13 @@
                 ${rundownBadge}
                 <span class="text-xs font-medium text-slate-500">${event.dateString}</span>
               </div>
-              <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words flex items-center gap-1.5">
-                <span>${event.title}</span>
-                ${hasRundown ? `<span class="text-xs text-rose-500 font-semibold" style="font-size: 0.75rem;">➔</span>` : ""}
+              <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words">
+                ${event.title}
               </h3>
               <p class="text-xs text-slate-500 mt-1 flex items-center">
                 <svg style="width: 0.875rem; height: 0.875rem; color: #94a3b8; margin-right: 0.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="truncate">${event.location}</span>
               </p>
-              ${hasRundown ? `<p class="text-xs text-rose-500 mt-2 font-medium flex items-center gap-1"><span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>點擊卡片查看完整高鐵、車隊與當日時程</p>` : ""}
             </div>
 
             <div class="flex flex-col items-end flex-shrink-0">
@@ -1588,6 +1586,19 @@
               </a>
             </div>
           </div>
+          ${hasRundown ? `
+            <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <button 
+                type="button"
+                onclick="event.stopPropagation(); openRundownModal('${event.id}');"
+                class="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50/90 hover:bg-rose-100 border border-rose-200/90 px-3.5 py-1.5 rounded-xl transition shadow-sm"
+              >
+                <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>查看詳細內容</span>
+              </button>
+              <span class="text-xs text-slate-400 font-medium flex items-center gap-0.5">點擊展開 ➔</span>
+            </div>
+          ` : ''}
         `;
         fragment.appendChild(card);
       });
