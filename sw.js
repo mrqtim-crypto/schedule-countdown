@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mrq-schedule-v9';
+const CACHE_NAME = 'mrq-schedule-v10';
 const ASSETS = [
   './',
   './index.html',
