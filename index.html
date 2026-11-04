@@ -1468,7 +1468,6 @@
           { label: "互動設備", value: "時尚刻印（拍貼機 ＆ 留聲機）" },
           { label: "宴客地點", value: "維多麗亞酒店 1 樓大宴會廳（台北市中山區敬業四路168號）" }
         ],
-        tags: ["成家婚禮顧問", "05:00 開妝", "07:00 攝影抵達", "09:00 文定儀式", "10:10 拜別迎娶", "10:40 入新房拜祖先", "17:00 證婚儀式", "18:00 晚宴一進", "19:05 二進互動", "20:35 送客"],
         timeline: [
           { time: "05:00", title: "女方開妝（飯店客房）", desc: "新娘與親友於維多麗亞飯店客房進行早妝造型準備。" },
           { time: "07:00", title: "攝影師抵達拍攝 📷", desc: "<strong>攝影師抵達客房開工</strong>。請新秘老師先讓攝影師拍幾個完妝與特寫畫面後再換裝。", highlight: true, dot: "rose" },
@@ -2097,15 +2096,6 @@
           } else {
             html += `<div><span class="font-bold text-slate-700">${m.label}：</span>${m.value}</div>`;
           }
-        });
-        html += `</div>`;
-      }
-
-      // 標籤群
-      if (rd.tags && rd.tags.length) {
-        html += `<div class="flex flex-wrap gap-1.5">`;
-        rd.tags.forEach(t => {
-          html += `<span class="text-xs px-2.5 py-1 rounded-lg bg-white/90 border border-slate-200 text-slate-600 font-medium">${t}</span>`;
         });
         html += `</div>`;
       }
