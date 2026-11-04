@@ -471,6 +471,26 @@
 </head>
 <body>
 
+  <!-- ==================== iOS 風格全域畫面下滑更新指示器 (Pull to Refresh) ==================== -->
+  <div 
+    id="pullToRefresh" 
+    style="position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(-100px); z-index: 1200; pointer-events: none; opacity: 0; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;"
+  >
+    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.1rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12); border: 1px solid rgba(226, 232, 240, 0.85); font-size: 0.75rem; font-weight: 600; color: #1e293b;">
+      <div id="ptrIconContainer" style="display: flex; align-items: center; justify-content: center; width: 1.125rem; height: 1.125rem;">
+        <svg id="ptrArrow" style="width: 1rem; height: 1rem; color: #0f172a; transition: transform 0.2s ease;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <polyline points="19 12 12 19 5 12"></polyline>
+        </svg>
+        <svg id="ptrSpinner" class="animate-spin hidden" style="width: 1rem; height: 1rem; color: #2563eb;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+      </div>
+      <span id="ptrText">下拉即可更新</span>
+    </div>
+  </div>
+
   <!-- ==================== 鎖定解鎖畫面 (白色簡約 PIN 碼) ==================== -->
   <div id="lockScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md" style="transition: opacity 0.25s ease;">
     <div id="lockCard" class="w-full max-w-sm bg-white rounded-3xl p-8 text-center flex flex-col items-center shadow-2xl border border-slate-100">
@@ -927,6 +947,7 @@
       checkAuth();
       setupPinInput();
       setupLifecycleHandlers();
+      setupPullToRefresh();
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
       }
@@ -1082,6 +1103,136 @@
         pauseAllActivities();
       });
       window.addEventListener("focus", resumeActivities);
+    }
+
+    // ==================== iOS 原生風格畫面下滑更新 (Pull to Refresh) ====================
+    function setupPullToRefresh() {
+      const ptr = document.getElementById("pullToRefresh");
+      const ptrArrow = document.getElementById("ptrArrow");
+      const ptrSpinner = document.getElementById("ptrSpinner");
+      const ptrText = document.getElementById("ptrText");
+      if (!ptr || !ptrArrow || !ptrSpinner || !ptrText) return;
+
+      let startY = 0;
+      let diffY = 0;
+      let isPulling = false;
+      let isRefreshing = false;
+      const THRESHOLD = 70; // 下拉觸發閾值 (px)
+
+      window.addEventListener("touchstart", (e) => {
+        if (isRefreshing) return;
+        // 僅當位於最頂部且非多指縮放時觸發
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        if (scrollTop > 5) return;
+
+        // 若詳細抽屜視窗或密碼鎖打開，不觸發主頁面下滑更新
+        const modal = document.getElementById("rundownModal");
+        if (modal && !modal.classList.contains("hidden")) return;
+        const lock = document.getElementById("lockScreen");
+        if (lock && lock.style.display !== "none") return;
+
+        if (e.touches.length === 1) {
+          startY = e.touches[0].clientY;
+          isPulling = true;
+          diffY = 0;
+          ptr.style.transition = "none";
+        }
+      }, { passive: true });
+
+      window.addEventListener("touchmove", (e) => {
+        if (!isPulling || isRefreshing) return;
+        const currentY = e.touches[0].clientY;
+        const delta = currentY - startY;
+
+        if (delta > 0) {
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+          if (scrollTop <= 2) {
+            diffY = delta;
+            // 擬真彈性阻尼曲線
+            const dampedY = Math.pow(diffY, 0.8) * 1.8;
+            const topOffset = Math.min(dampedY, 110);
+
+            ptr.style.transform = `translateX(-50%) translateY(${topOffset}px)`;
+            ptr.style.opacity = Math.min(topOffset / 35, 1).toString();
+
+            if (diffY >= THRESHOLD) {
+              ptrText.textContent = "放開立即更新";
+              ptrArrow.style.transform = "rotate(180deg)";
+            } else {
+              ptrText.textContent = "下拉即可更新";
+              ptrArrow.style.transform = "rotate(0deg)";
+            }
+          }
+        }
+      }, { passive: true });
+
+      window.addEventListener("touchend", async () => {
+        if (!isPulling || isRefreshing) return;
+        isPulling = false;
+
+        ptr.style.transition = "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease";
+
+        if (diffY >= THRESHOLD) {
+          isRefreshing = true;
+          ptr.style.transform = "translateX(-50%) translateY(75px)";
+          ptrArrow.classList.add("hidden");
+          ptrSpinner.classList.remove("hidden");
+          ptrText.textContent = "正在更新最新內容...";
+
+          try {
+            // 1. 強制檢查並更新 Service Worker
+            if ('serviceWorker' in navigator) {
+              try {
+                const reg = await navigator.serviceWorker.getRegistration();
+                if (reg) await reg.update();
+              } catch (_) {}
+            }
+
+            // 2. 重新連線 Google Apps Script 即時 API
+            if (typeof fetchLiveCalendarEvents === "function") {
+              await fetchLiveCalendarEvents();
+            }
+
+            // 3. 重新渲染主畫面清單與日曆
+            if (typeof renderPortal === "function") renderPortal();
+            if (typeof renderCalendar === "function") renderCalendar(currentCalYear, currentCalMonth);
+
+            // 若在專屬分享頁面，亦刷新專屬內容
+            if (typeof checkShareMode === "function") checkShareMode();
+
+            // 更新成功視覺反饋
+            ptrText.textContent = "已是最新內容 ✓";
+            ptrText.style.color = "#10b981";
+            ptrSpinner.classList.add("hidden");
+            ptrArrow.classList.remove("hidden");
+            ptrArrow.style.transform = "rotate(0deg)";
+            ptrArrow.style.color = "#10b981";
+
+            setTimeout(() => {
+              ptr.style.transform = "translateX(-50%) translateY(-100px)";
+              ptr.style.opacity = "0";
+              setTimeout(() => {
+                isRefreshing = false;
+                ptrText.textContent = "下拉即可更新";
+                ptrText.style.color = "";
+                ptrArrow.style.color = "#0f172a";
+              }, 250);
+            }, 600);
+
+          } catch (_) {
+            ptrText.textContent = "更新完成 ✓";
+            setTimeout(() => {
+              ptr.style.transform = "translateX(-50%) translateY(-100px)";
+              ptr.style.opacity = "0";
+              isRefreshing = false;
+            }, 500);
+          }
+        } else {
+          // 未達閾值彈回隱藏
+          ptr.style.transform = "translateX(-50%) translateY(-100px)";
+          ptr.style.opacity = "0";
+        }
+      }, { passive: true });
     }
 
     // 連線 Google Apps Script 即時 API (非同步背景讀取，零阻塞 UI)
