@@ -778,7 +778,7 @@
     // 密碼 SHA-256 Hash ("0310" 的 Hash 值)
     const AUTH_HASH = "408a5ee676694af19215cb22b2cd871e39c693f907933583ece00eda8d73ee16";
     const STORAGE_KEY = "schedule_auth_token_0310";
-    const CACHE_EVENTS_KEY = "schedule_cached_events_v2";
+    const CACHE_EVENTS_KEY = "schedule_cached_events_v7";
 
     // Google Apps Script 即時同步 API 網址
     let GAS_API_URL = localStorage.getItem("gas_api_url") || "https://script.google.com/macros/s/AKfycbxUsCofRyThB4b66SUp28wjCg78KRc3hS8eKgZi_jXVJTNvLlsWagSdIPqDDm4XLCU5/exec";
@@ -805,7 +805,7 @@
     };
 
     // 基準預設/快取資料 (優先讀取本機快取以達成 0 延遲秒開)
-    let EVENTS_DATA = [
+    const DEFAULT_EVENTS = [
       {
         id: "panreg9jki5af1iqpgm8pj9nt0",
         title: "訂婚儀式+午宴",
@@ -918,13 +918,40 @@
       }
     ];
 
-    // 嘗試從 localStorage 載入先前的快取資料
+    let EVENTS_DATA = JSON.parse(JSON.stringify(DEFAULT_EVENTS));
+
+    // 嘗試從 localStorage 載入先前的快取資料並與最新程式碼智慧校準 (絕不覆蓋最新設定)
     try {
+      ["schedule_cached_events_v1", "schedule_cached_events_v2", "schedule_cached_events_v3", "schedule_cached_events_v4", "schedule_cached_events_v5", "schedule_cached_events_v6"].forEach(k => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+
       const cached = localStorage.getItem(CACHE_EVENTS_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          EVENTS_DATA = parsed;
+          const defaultMap = new Map(DEFAULT_EVENTS.map(e => [e.id, e]));
+          EVENTS_DATA = parsed.map(ev => {
+            if (defaultMap.has(ev.id)) {
+              const def = defaultMap.get(ev.id);
+              return {
+                ...ev,
+                startDate: def.startDate || ev.startDate,
+                endDate: def.endDate || ev.endDate,
+                dateString: def.dateString || ev.dateString,
+                title: def.title || ev.title,
+                location: def.location || ev.location,
+                category: def.category || ev.category,
+                type: def.type || ev.type
+              };
+            }
+            return ev;
+          });
+          DEFAULT_EVENTS.forEach(def => {
+            if (!EVENTS_DATA.some(e => e.id === def.id)) {
+              EVENTS_DATA.push(def);
+            }
+          });
         }
       }
     } catch (_) {}
@@ -1187,6 +1214,12 @@
                 if (reg) await reg.update();
               } catch (_) {}
             }
+
+            // 1.5 重新校正資料為最新版
+            try {
+              localStorage.removeItem(CACHE_EVENTS_KEY);
+              EVENTS_DATA = JSON.parse(JSON.stringify(DEFAULT_EVENTS));
+            } catch (_) {}
 
             // 2. 重新連線 Google Apps Script 即時 API
             if (typeof fetchLiveCalendarEvents === "function") {
@@ -2610,6 +2643,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-2" style="flex-wrap: wrap;">
                 ${categoryBadge}
+                ${hasRundown ? `<span class="inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200"><span style="margin-right: 0.2rem;">📋</span>附詳細內容</span>` : ''}
                 <span class="text-xs font-medium text-slate-500">${event.dateString}</span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug break-words">
@@ -2631,8 +2665,8 @@
                   <button 
                     type="button"
                     onclick="event.stopPropagation(); openRundownModal('${event.id}');"
-                    class="inline-flex items-center space-x-1 text-xs font-semibold ${event.type === 'work' ? 'text-rose-600 bg-rose-50/90 border border-rose-200/90' : 'text-sky-600 bg-sky-50/90 border border-sky-200/90'} px-2.5 py-1 rounded-lg transition"
-                    title="查看活動詳細流程"
+                    class="inline-flex items-center space-x-1.5 text-xs font-bold ${event.type === 'work' ? 'text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200' : 'text-sky-600 bg-sky-50 hover:bg-sky-100 border border-sky-200'} px-3 py-1 rounded-lg transition active:scale-95 cursor-pointer shadow-xs"
+                    title="點擊查看活動詳細流程"
                   >
                     <span>詳細內容</span>
                     <span style="font-size: 0.75rem;">➔</span>
