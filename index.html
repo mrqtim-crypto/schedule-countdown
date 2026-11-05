@@ -874,13 +874,13 @@
       },
       {
         id: "hosp9mmqthtqtldpru7gqsoqqk",
-        title: "靜心同學會",
+        title: "2026 靜心同學會",
         category: "拍攝工作",
         type: "work",
-        startDate: "2026-12-19T11:30:00",
+        startDate: "2026-12-19T11:15:00",
         endDate: "2026-12-19T14:30:00",
-        dateString: "2026/12/19 (六) 11:30",
-        location: "大院子老屋餐廳",
+        dateString: "2026/12/19 (六) 11:15 攝影抵達",
+        location: "大院子 老屋餐廳（法式西餐）",
         calLink: "https://calendar.google.com/calendar/r/eventedit/hosp9mmqthtqtldpru7gqsoqqk"
       },
       {
@@ -1287,6 +1287,9 @@
             if (ev.id === "eu7j2h0md9eqfhv9bclndk816s" || (title.includes("訂婚") && (title.includes("台中") || title.includes("林皇宮")))) {
               startDate = "2026-12-20T06:20:00";
               dateString = "2026/12/20 (日) 06:20 拍攝開工";
+            } else if (ev.id === "hosp9mmqthtqtldpru7gqsoqqk" || title.includes("靜心同學會") || title.includes("大院子")) {
+              startDate = "2026-12-19T11:15:00";
+              dateString = "2026/12/19 (六) 11:15 攝影抵達";
             } else if (ev.id === "oojkhdud9v7h6fdtqovf3kqvok" || (title.includes("訂婚") && title.includes("證婚"))) {
               if (startDate && startDate.includes("T00:00:00")) {
                 startDate = "2026-11-29T07:00:00";
@@ -1731,6 +1734,35 @@
           { id: "rd_1220_chk_11", text: "<strong>11:30 白珍珠廳彩排：</strong>音控確認隨身碟影片與音樂、走位彩排。" },
           { id: "rd_1220_chk_12", text: "<strong>12:30 第一次進場：</strong>婚紗輪播影片播放、新人隆重第一次進場。" }
         ]
+      },
+
+      // 12/19 2026靜心同學會（大院子老屋餐廳 法式西餐）
+      "hosp9mmqthtqtldpru7gqsoqqk": {
+        type: "work",
+        badge: "📸 拍攝工作詳細流程",
+        theme: "rose",
+        title: "2026 靜心同學會 拍攝時程",
+        subtitle: "🍽️ 大院子 老屋餐廳（法式西餐） ｜ 11:30 - 14:30",
+        meta: [
+          { label: "活動名稱", value: "2026 靜心同學會" },
+          { label: "活動時間", value: "2026/12/19 (六) 11:30 - 14:30" },
+          { label: "宴聚地點", value: "大院子 老屋餐廳（法式西餐 / 台北市大安區和平東路一段248巷10號）" },
+          { label: "攝影抵達", value: "11:15 抵達現場勘景、設備預備與花絮開拍" },
+          { label: "停車建議", value: "可停辛亥路停車場（步行約 4 分鐘即可抵達餐廳）" }
+        ],
+        timeline: [
+          { time: "11:15", title: "攝影師抵達現場 📷", desc: "<strong>攝影師準時抵達大院子老屋餐廳開工</strong>。進行現場環境勘景、光線調校、拍攝合照準備與老屋景觀細節寫真。", highlight: true, dot: "rose" },
+          { time: "11:30", title: "同學相見歡 ＆ 迎賓入席", desc: "同學陸續抵達簽到、寒暄互動與桌邊熱鬧合照寫真，捕捉久別重逢的自然歡樂瞬間。" },
+          { time: "12:00 - 14:00", title: "法式西餐饗宴 ＆ 互動交流", desc: "主辦同學致詞、老屋餐廳精緻法式美饌享用、同學逐桌互動話當年、小活動與即興分享留念。", highlight: true, dot: "rose" },
+          { time: "14:00 - 14:30", title: "全體大合照 ＆ 留念告別", desc: "於大院子老屋日式建築庭院前拍攝全體同學大合照、好友分組紀念照，活動圓滿結束。", highlight: true, dot: "gold" }
+        ],
+        checklist: [
+          { id: "rd_1219_chk_01", text: "<strong>11:15 攝影抵達：</strong>大院子老屋餐廳勘景、鏡頭配件檢查、測試室內光線。" },
+          { id: "rd_1219_chk_02", text: "<strong>停車資訊確認：</strong>辛亥路停車場步行 4 分鐘，預留車位尋找時間。" },
+          { id: "rd_1219_chk_03", text: "<strong>11:30 迎賓抓拍：</strong>捕捉老同學久違相聚的第一個擁抱與笑容。" },
+          { id: "rd_1219_chk_04", text: "<strong>12:00 用餐互動拍攝：</strong>自然桌邊交流抓拍、餐點美拍、致詞互動。" },
+          { id: "rd_1219_chk_05", text: "<strong>14:00 庭院大合照：</strong>於老屋日式庭園前集合全體大合影與分組留念。" }
+        ]
       }
     };
 
@@ -1745,6 +1777,9 @@
       }
       if (start.includes("2026-11-29") || title.includes("11/29") || title.includes("王萬理") || title.includes("陳奕淳") || title.includes("維多麗亞")) {
         return EVENT_RUNDOWNS["oojkhdud9v7h6fdtqovf3kqvok"];
+      }
+      if (start.includes("2026-12-19") || title.includes("12/19") || title.includes("靜心") || title.includes("大院子")) {
+        return EVENT_RUNDOWNS["hosp9mmqthtqtldpru7gqsoqqk"];
       }
       if (start.includes("2026-12-20") || title.includes("12/20") || title.includes("林皇宮") || title.includes("林酒店") || title.includes("白珍珠")) {
         return EVENT_RUNDOWNS["eu7j2h0md9eqfhv9bclndk816s"];
@@ -1841,6 +1876,19 @@
           event: EVENTS_DATA.find(e => e.id === "eu7j2h0md9eqfhv9bclndk816s") || {
             startDate: "2026-12-20T06:20:00",
             dateString: "2026/12/20 (日) 06:20 拍攝開工"
+          }
+        };
+      }
+
+      // 12/19 靜心同學會 (大院子老屋餐廳 法式西餐)
+      if (k === "1219" || k.includes("1219") || k === "hosp9mmqthtqtldpru7gqsoqqk" || k.includes("靜心") || k.includes("大院子")) {
+        return {
+          shareKey: "1219",
+          id: "hosp9mmqthtqtldpru7gqsoqqk",
+          rd: EVENT_RUNDOWNS["hosp9mmqthtqtldpru7gqsoqqk"],
+          event: EVENTS_DATA.find(e => e.id === "hosp9mmqthtqtldpru7gqsoqqk") || {
+            startDate: "2026-12-19T11:15:00",
+            dateString: "2026/12/19 (六) 11:15 攝影抵達"
           }
         };
       }
@@ -2121,7 +2169,7 @@
       updateCheckProgress();
 
       // 啟動專屬實時倒數計時
-      const targetTimeStr = event.startDate || (item.id === "oojkhdud9v7h6fdtqovf3kqvok" ? "2026-11-29T07:00:00" : (item.id === "eu7j2h0md9eqfhv9bclndk816s" ? "2026-12-20T06:20:00" : "2026-11-08T06:00:00"));
+      const targetTimeStr = event.startDate || (item.id === "oojkhdud9v7h6fdtqovf3kqvok" ? "2026-11-29T07:00:00" : (item.id === "eu7j2h0md9eqfhv9bclndk816s" ? "2026-12-20T06:20:00" : (item.id === "hosp9mmqthtqtldpru7gqsoqqk" ? "2026-12-19T11:15:00" : "2026-11-08T06:00:00")));
       startSharedCountdownTicker(targetTimeStr);
 
       // 若裝置本身已記住管理員登入，於底部顯示切換連結
@@ -2135,10 +2183,12 @@
       if (!currentOpenRundown) return;
       const rd = currentOpenRundown;
 
-      // 決定專屬分享短代號 (12/20 ➔ 1220, 11/29 ➔ 1129, 11/8 ➔ 1108, 或使用 eventId)
-      let shareKey = currentOpenEventId || "1220";
+      // 決定專屬分享短代號 (12/20 ➔ 1220, 12/19 ➔ 1219, 11/29 ➔ 1129, 11/8 ➔ 1108, 或使用 eventId)
+      let shareKey = currentOpenEventId || "1219";
       if (currentOpenEventId === "eu7j2h0md9eqfhv9bclndk816s" || (rd.title && (rd.title.includes("12/20") || rd.title.includes("林皇宮")))) {
         shareKey = "1220";
+      } else if (currentOpenEventId === "hosp9mmqthtqtldpru7gqsoqqk" || (rd.title && (rd.title.includes("靜心") || rd.title.includes("大院子")))) {
+        shareKey = "1219";
       } else if (currentOpenEventId === "oojkhdud9v7h6fdtqovf3kqvok" || (rd.title && rd.title.includes("11/29"))) {
         shareKey = "1129";
       } else if (currentOpenEventId === "bgug42mmophmt0pcsdvbn2gq20" || (rd.title && rd.title.includes("11/8"))) {
