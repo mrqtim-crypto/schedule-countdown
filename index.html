@@ -857,7 +857,7 @@
         type: "work",
         startDate: "2026-11-29T07:00:00",
         endDate: "2026-11-30T00:00:00",
-        dateString: "2026/11/29 (日)",
+        dateString: "2026/11/29 (日) 07:00 拍攝抵達",
         location: "台北",
         calLink: "https://calendar.google.com/calendar/r/eventedit/oojkhdud9v7h6fdtqovf3kqvok"
       },
@@ -1448,14 +1448,24 @@
           dayEvents.forEach(ev => {
             const isWork = ev.type === "work";
             const badgeBg = isWork ? "background-color: #fff1f2; color: #be123c; border: 1px solid #fecdd3;" : "background-color: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd;";
+            
+            // 擷取具體時間前綴 (若非全天 00:00，確保日曆與卡片、詳細內容時間完全同步)
+            let timePrefix = "";
+            if (ev.startDate && ev.startDate.includes("T")) {
+              const timePart = ev.startDate.split("T")[1];
+              if (timePart && !timePart.startsWith("00:00")) {
+                timePrefix = timePart.substring(0, 5) + " ";
+              }
+            }
+
             innerHTML += `
               <div 
                 onclick="scrollToEvent('card-${ev.id}')"
                 style="margin-top: 3px; width: 100%; font-size: 0.5625rem; font-weight: 700; padding: 1px 3px; border-radius: 4px; ${badgeBg}; cursor: pointer;" 
                 class="truncate"
-                title="${ev.title} (${ev.location})"
+                title="${timePrefix}${ev.title} (${ev.location})"
               >
-                ${ev.title}
+                ${timePrefix ? `<span style="font-family: monospace; font-weight: 800; opacity: 0.95;">${timePrefix}</span>` : ''}${ev.title}
               </div>
             `;
           });
