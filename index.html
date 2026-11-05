@@ -888,9 +888,9 @@
         title: "訂婚儀式+午宴 (前一晚下台中午要訂房間)",
         category: "拍攝工作",
         type: "work",
-        startDate: "2026-12-20T07:00:00",
+        startDate: "2026-12-20T06:20:00",
         endDate: "2026-12-20T15:00:00",
-        dateString: "2026/12/20 (日)",
+        dateString: "2026/12/20 (日) 06:20 拍攝開工",
         location: "台中林酒店 / 台中林皇宮",
         calLink: "https://calendar.google.com/calendar/r/eventedit/eu7j2h0md9eqfhv9bclndk816s"
       },
@@ -1280,8 +1280,24 @@
                            title.includes("週歲") || 
                            title.includes("靜心同學會");
 
+            let startDate = ev.startDate;
+            let dateString = ev.dateString;
+
+            // 針對已有客製詳細流程之拍攝工作，保留攝影師開工精確倒數時辰
+            if (ev.id === "eu7j2h0md9eqfhv9bclndk816s" || (title.includes("訂婚") && (title.includes("台中") || title.includes("林皇宮")))) {
+              startDate = "2026-12-20T06:20:00";
+              dateString = "2026/12/20 (日) 06:20 拍攝開工";
+            } else if (ev.id === "oojkhdud9v7h6fdtqovf3kqvok" || (title.includes("訂婚") && title.includes("證婚"))) {
+              if (startDate && startDate.includes("T00:00:00")) {
+                startDate = "2026-11-29T07:00:00";
+                dateString = "2026/11/29 (日) 07:00 拍攝抵達";
+              }
+            }
+
             return {
               ...ev,
+              startDate,
+              dateString,
               category: isWork ? "拍攝工作" : "旅行",
               type: isWork ? "work" : "travel"
             };
@@ -1669,7 +1685,8 @@
           { label: "六禮聘禮", value: "大餅12盒、西式小餅12盒、炮燭禮1組、六色喜糖1組、聘金金飾、頭尾禮六件（口袋皮夾放紅包$600）、工作人員紅包" }
         ],
         timeline: [
-          { time: "04:00 - 07:30", title: "女方梳妝（林酒店客房）", desc: "新娘梳妝；媽媽化妝 07:00-07:40；爸比、媽咪 07:00 抵達林酒店。<br>新娘換穿中式引禮服，白紗掛於窗邊由攝影師拍攝禮服細節寫真。" },
+          { time: "05:00", title: "女方開妝（林酒店客房）", desc: "新娘早妝造型開始準備；媽媽化妝 07:00-07:40；爸比、媽咪 07:00 抵達林酒店。<br>新娘換穿中式引禮服。" },
+          { time: "06:20", title: "攝影師抵達拍攝 📷", desc: "<strong>攝影師抵達林酒店客房開工</strong>。拍攝新娘梳化花絮、白紗禮服掛窗邊細節特寫、婚鞋金飾寫真。請新秘老師先讓攝影師拍幾個完妝特寫畫面後再換裝。", highlight: true, dot: "rose" },
           { time: "07:00", title: "男方出發前往林酒店（男方家）", desc: "貢禮官清點六禮並安排上禮車（大餅小餅各12盒、炮燭、六色糖、聘金金飾、頭尾禮六件、紅包）。<br>燃放排炮，車隊（雙數輛車）準時出發前往林酒店女方家。", dot: "gold" },
           { time: "07:40 - 08:00", title: "新郎梳妝就緒（林酒店）", desc: "新郎西裝、皮鞋整裝完畢，準備迎娶儀式。" },
           { time: "08:00 - 08:30", title: "拜別女方父母 ＆ 擲扇出閣", desc: "<strong>拜別父母：</strong>新人一同拜別女方父母，感謝養育之恩，父母一同為新娘蓋上頭紗。<br><strong>出閣上車：</strong>好命婦人牽新娘，媒人持米篩遮天護送上禮車。<br><strong>擲扇儀式：</strong>禮車開動時新娘擲下綁紅包的扇子（象徵丟棄壞習性），由女方親友拾起。", highlight: true, dot: "rose" },
@@ -1690,7 +1707,8 @@
           { time: "12:30 - 12:50", title: "第一次進場（白紗登場）", desc: "播放婚紗輪播影片 ➔ 新郎新娘隆重第一次進場！", highlight: true, dot: "rose" }
         ],
         checklist: [
-          { id: "rd_1220_chk_01", text: "<strong>04:00 - 07:30 林酒店梳化：</strong>新娘穿中式禮服、媽媽化妝、白紗掛窗邊拍禮服細節。" },
+          { id: "rd_1220_chk_01", text: "<strong>05:00 女方林酒店開妝：</strong>新娘中式禮服梳化、媽媽化妝、爸媽抵達。" },
+          { id: "rd_1220_chk_01b", text: "<strong>06:20 攝影開工拍攝：</strong>攝影師抵達客房拍攝梳化花絮、白紗掛窗邊特寫、婚鞋金飾寫真。" },
           { id: "rd_1220_chk_02", text: "<strong>07:00 男方出發清點六禮：</strong>大餅小餅各12盒、炮燭、六色糖、聘金金飾、頭尾禮六件、紅包。" },
           { id: "rd_1220_chk_03", text: "<strong>08:00 拜別父母儀式：</strong>新人拜別岳父岳母、蓋頭紗、米篩遮天、新娘擲扇（綁紅包）。" },
           { id: "rd_1220_chk_04", text: "<strong>08:40 抵達林皇宮開門禮：</strong>前100公尺鳴炮、幼輩端蘋果2顆開車門、新郎換蘋果給紅包。" },
@@ -1811,8 +1829,8 @@
           id: "eu7j2h0md9eqfhv9bclndk816s",
           rd: EVENT_RUNDOWNS["eu7j2h0md9eqfhv9bclndk816s"],
           event: EVENTS_DATA.find(e => e.id === "eu7j2h0md9eqfhv9bclndk816s") || {
-            startDate: "2026-12-20T07:00:00",
-            dateString: "2026/12/20 (日)"
+            startDate: "2026-12-20T06:20:00",
+            dateString: "2026/12/20 (日) 06:20 拍攝開工"
           }
         };
       }
@@ -2093,7 +2111,7 @@
       updateCheckProgress();
 
       // 啟動專屬實時倒數計時
-      const targetTimeStr = event.startDate || (item.id === "oojkhdud9v7h6fdtqovf3kqvok" ? "2026-11-29T07:00:00" : (item.id === "eu7j2h0md9eqfhv9bclndk816s" ? "2026-12-20T07:00:00" : "2026-11-08T06:00:00"));
+      const targetTimeStr = event.startDate || (item.id === "oojkhdud9v7h6fdtqovf3kqvok" ? "2026-11-29T07:00:00" : (item.id === "eu7j2h0md9eqfhv9bclndk816s" ? "2026-12-20T06:20:00" : "2026-11-08T06:00:00"));
       startSharedCountdownTicker(targetTimeStr);
 
       // 若裝置本身已記住管理員登入，於底部顯示切換連結
